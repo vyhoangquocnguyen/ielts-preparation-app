@@ -1,0 +1,359 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User{
+  id String @id @default(cuid())
+  clerkId String @unique
+  email String @unique
+  firstName String?
+  lastName String?
+  imgUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targetScore Float? @default(7.5)
+  studyGoal String?
+  
+  currentStreak Int? @default(0)
+  longestStreak Int? @default(0)
+  lastStudyDate DateTime?
+  totalStudyTime Int @default(0)
+
+  // Relations (with other models - listening, reading, speaking, writing attempts)
+  listeningAttempts ListeningAttempt[]
+  readingAttempts ReadingAttempt[]
+  speakingAttempts SpeakingAttempt[]
+  writingAttempts WritingAttempt[]
+
+  // Bookmarks
+  bookmarks Booknark[]
+  analytics UserAnalytics[]
+
+  // Indices
+  @@index([clerkId])
+  @@index([email])
+}
+
+model UserAnalytics {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  month Int @default(0)
+  year Int @default(0)
+
+  //Module-specific score
+  listeningAvg Float @default(0)
+  readingAvg Float @default(0)
+  speakingAvg Float @default(0)
+  writingAvg Float @default(0)
+
+  exercisesDone Int @default(0)
+  totalStudyTime Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indices
+  @@unique([userId, month, year])
+  @@index([userId])
+}
+
+/*MODELS FOR MODULES*/
+
+model ListeningExercise {
+  id String @id @default(cuid())
+  title String
+  description String?
+  difficulty String
+  category String
+
+  audioUrl String
+  duration Int
+  transcript String? @db.Text
+
+  isPublished Boolean @default(false)
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  //relations
+  questions ListeningQuestion[]
+  attempts ListeningAttempt[]
+
+  //Indices
+  @@index([difficulty])
+  @@index([category])
+  @@index([isPublished])
+}
+
+model ListeningQuestion {
+  id String @id @default(cuid())
+  exercisedId String
+  exercise ListeningExercise @relation(fields: [exercisedId], references: [id], onDelete: Cascade)
+
+  questionNumber Int
+  questionType String 
+  questionText String @db.Text
+
+
+  //For multiple choice
+  options String[]
+
+  correctAnswer String
+  explanation String? @db.Text
+
+  //Audio timestamp
+  startTime Int?
+  endTime Int?
+
+  points Int @default(1)
+
+  //Indices
+  @@index([exercisedId])
+  @@unique([exercisedId, questionNumber])
+}
+
+
+model ListeningAttempt {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  exerciseId String
+  exercise ListeningExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  answers Json
+  score Float 
+  correctCount Int
+  totalQuestions Int
+
+  timeSpent Int
+  completed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  //Indices
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([createdAt])
+}
+
+// Reading Module
+model ReadingExercise {
+  id String @id @default(cuid())
+  title String
+  description String?
+  difficulty String
+  category String
+
+  passage String @db.Text
+  wordCount Int?
+
+  isPublished Boolean @default(false)
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  //relations
+  questions ReadingQuestion[]
+  attempts ReadingAttempt[]
+
+  //Indices
+  @@index([difficulty])
+  @@index([category])
+  @@index([isPublished])
+}
+
+model ReadingQuestion {
+  id String @id @default(cuid())
+  exercisedId String
+  exercise ReadingExercise @relation(fields: [exercisedId], references: [id], onDelete: Cascade)
+
+  questionNumber Int
+  questionType String 
+  questionText String @db.Text
+
+
+  //For multiple choice
+  options String[]
+
+  correctAnswer String
+  explanation String? @db.Text
+
+
+  points Int @default(1)
+
+
+  //Indices
+  @@index([exercisedId])
+  @@unique([exercisedId, questionNumber])
+}
+
+model ReadingAttempt {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  exerciseId String
+  exercise ReadingExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  answers Json
+  score Float 
+  correctCount Int
+  totalQuestions Int
+
+  timeSpent Int
+  completed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  //Indices
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([createdAt])
+}
+
+// Writing module
+model WritingTask{
+  id String @id @default(cuid())
+  title String
+  taskType String
+  category String
+
+  prompt String @db.Text
+  imgUrl String?
+
+  // Guildlines
+  minWords Int? @default(150)
+  timeLimit Int? @default(20)
+
+  sampleAnswer String? @db.Text
+
+  isPublished Boolean @default(false)
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+ 
+  //relations
+  attempts WritingAttempt[]
+
+  //Indices
+  @@index([taskType])
+  @@index([category])
+  @@index([isPublished])
+}
+
+model WritingAttempt {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  taskId String
+  task WritingTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+  wordCount Int
+
+  overallScore Float?
+  feedback Json?
+
+  timeSpent Int
+  completed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  //Indices
+  @@index([userId])
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+// Speaking Module
+model SpeakingExercise {
+  id String @id @default(cuid())
+  title String
+  description String?
+  part String
+
+  questions String[]
+
+  topic String?
+  cueCard String? @db.Text
+  prepTime Int? @default(60)
+  speakingTime Int? @default(120)
+  
+  isPublished Boolean @default(false)
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  //relations
+  attempts SpeakingAttempt[]
+
+  //Indices
+  @@index([part])
+  @@index([isPublished])
+}
+
+model SpeakingAttempt {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  exerciseId String
+  exercise SpeakingExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  audioUrl String
+  audioDuration Int
+
+  transcript String? @db.Text
+
+  overallScore Float?
+  feedback Json?
+
+  completed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  //Indices
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([createdAt])
+}
+
+// Booknark
+model Booknark {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  moduleType String
+  exerciseId String
+
+  note String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  //Indices
+  @@unique([userId, moduleType, exerciseId])
+  @@index([userId])
+  @@index([moduleType])
+}
