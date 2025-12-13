@@ -31,8 +31,6 @@ interface MobileSideBarProps {
   onClose: () => void;
 }
 const MobileSideBar = ({ open, onClose }: MobileSideBarProps) => {
-  console.log("open yet", open);
-  console.log("onClose yet", onClose);
   return (
     <Transition show={open} as={Fragment}>
       <Dialog as="div" className="relative z-50 lg:hidden" onClose={onClose}>

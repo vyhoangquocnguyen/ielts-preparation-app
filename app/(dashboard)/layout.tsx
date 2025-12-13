@@ -1,5 +1,6 @@
 import Header from "@/components/dashboard/header";
 import SideBar from "@/components/dashboard/sideBar";
+import DashboardPage from "./dashboard/page";
 
 const DashboardLayout = () => {
   return (
@@ -14,7 +15,7 @@ const DashboardLayout = () => {
         {/* Content */}
         <main className="py-10">
           <div className="px-4 sm:px-6 lg:px-8">
-            <h1>Dashboard Layout</h1>
+            <DashboardPage />
           </div>
         </main>
       </div>
