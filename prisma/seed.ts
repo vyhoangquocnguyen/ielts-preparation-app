@@ -17,6 +17,7 @@ const prisma = new PrismaClient({
 async function main() {
   console.log("🌱 Starting database seed...");
 
+  
   // Create sample listening exercises
   const listeningExercise = await prisma.listeningExercise.create({
     data: {
