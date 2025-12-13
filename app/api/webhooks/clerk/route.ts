@@ -4,9 +4,9 @@ import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+  const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
-  if (!WEBHOOK_SECRET) {
+  if (!CLERK_WEBHOOK_SECRET) {
     throw new Error("Missing webhook secret");
   }
 
@@ -17,15 +17,15 @@ export async function POST(req: Request) {
   const svix_signature = headerPayload.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    throw new Response("Error:Missing headers", { status: 400 });
+    return new Response("Error:Missing headers", { status: 400 });
   }
 
   // 3. Read the message body
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
+  const body = await req.text();
+  console.log("Body length:", body.length);
 
   // 4. Verify the message
-  const wh = new Webhook(WEBHOOK_SECRET);
+  const wh = new Webhook(CLERK_WEBHOOK_SECRET);
   let event: WebhookEvent;
   try {
     event = wh.verify(body, {
@@ -44,12 +44,19 @@ export async function POST(req: Request) {
   // When a new user signs up
   if (eventType === "user.created") {
     const { id, email_addresses, first_name, last_name, image_url } = event.data;
+
+    if (!email_addresses || email_addresses.length === 0) {
+      console.error("Error: No email addresses found in webhook event");
+      return new Response("Error: Missing email address", { status: 400 });
+    }
+
+    const email = email_addresses[0].email_address;
     try {
       // Create user in database
       await prisma.user.create({
         data: {
           clerkId: id,
-          email: email_addresses[0].email_address,
+          email: email,
           firstName: first_name || null,
           lastName: last_name || null,
           imgUrl: image_url || null,
@@ -58,7 +65,7 @@ export async function POST(req: Request) {
       console.log(`User creaated: ${email_addresses[0].email_address}`);
     } catch (error) {
       console.error("Error creating user in database:", error);
-      return new Response("Error: Could not create user", { status: 500 });
+      return new Response("Error: Could not create user in database", { status: 500 });
     }
   }
 

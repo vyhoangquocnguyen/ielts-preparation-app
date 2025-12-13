@@ -8,17 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartBarIcon, ClockIcon, PlusIcon } from "@heroicons/react/24/outline";
 const DashboardPage = async () => {
   // Authentication
-  //   const { userId } = auth();
+  // const { userId } = auth();
 
-    // Fetch User Data
-
-    // const user = await prisma.user.findUnique({
-    //     where: {
-    //     //   clerkId: userId, << after finishing authentication
-    //     email:"abc@gmail.com"
-    //   },
-    // });
-    
+  // const user = await prisma.user.findUnique({
+  //     where: {
+  //     clerkId: userId
+  //   },
+  // });
 
   return (
     <div className="space-y-8 animate-fade-in">
