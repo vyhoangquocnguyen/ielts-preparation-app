@@ -22,13 +22,13 @@ export default function RootLayout({
   return (
     <>
       <html lang="en" suppressHydrationWarning>
-        <ClerkProvider>
-          <body className={`${inter.className}`}>
+        <body className={`${inter.className}`}>
+          <ClerkProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               {children}
             </ThemeProvider>
-          </body>
-        </ClerkProvider>
+          </ClerkProvider>
+        </body>
       </html>
     </>
   );

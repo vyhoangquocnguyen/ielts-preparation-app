@@ -17,9 +17,16 @@ const Header = () => {
           <Bars3Icon className="size-6" aria-hidden="true" />
         </button>
 
-        {/* Spaceer */}
+        {/* Spacer */}
         <div className="flex flex-1 self-stretch lg:gap-x-">
-          <div className="flex flex-1 items-center">{/* Search */}</div>
+          <div className="flex flex-1 items-center justify-center">
+            {/* Search */}
+            <input
+              type="text"
+              placeholder="Search"
+              className="w-full rounded-md border-gray-300 pl-10 pr-4 py-2 focus:outline-none focus:ring-primary focus:border-primary"
+            />
+          </div>
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             {/* User Menu from Clerk */}
             <UserButton

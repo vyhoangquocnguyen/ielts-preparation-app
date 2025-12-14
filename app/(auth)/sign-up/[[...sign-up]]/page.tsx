@@ -51,7 +51,7 @@ const SignUpPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-orange-400 to-amber-600 dark:from-blue-800 dark:to-transparent px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-orange-50 to-amber-50 dark:from-blue-800 dark:to-transparent px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
