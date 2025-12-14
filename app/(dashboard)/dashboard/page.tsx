@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenIcon, ChartBarIcon, ClockIcon, FireIcon, PlusIcon, TrophyIcon } from "@heroicons/react/24/outline";
+import { BoltIcon, BookOpenIcon, ChartBarIcon, ClockIcon, FireIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import { redirect } from "next/navigation";
 import { getDashboardStatistics, getRecentActivity } from "@/lib/actions/user";
 import { formatRelativeTime, getScoreColor } from "@/lib/utils";
@@ -85,14 +85,14 @@ const DashboardPage = async () => {
       </div>
       {/* Progress */}
       <Card className="hover:shadow-lg transition-shadow duration-200">
-        <CardHeader className="flex items-center gap-2">
+        <CardHeader className="flex items-center">
           <CardTitle className="flex items-center gap-x-1">
             <ChartBarIcon className="size-5" />
             Module Progress
           </CardTitle>
           <CardDescription>Your average performance by module</CardDescription>
         </CardHeader>
-        <CardContent className="grid  md:grid-cols-2 space-y-4">
+        <CardContent className="grid md:grid-cols-2">
           <ModuleScore
             name="Listening"
             score={stats.averageScore.listening ?? 0}
@@ -105,7 +105,7 @@ const DashboardPage = async () => {
       </Card>
       {/* Recent Activity */}
       <Card className="hover:shadow-lg transition-shadow duration-200">
-        <CardHeader className="flex items-center gap-2">
+        <CardHeader className="flex items-center">
           <CardTitle className="flex items-center gap-x-1">
             <ClockIcon className="size-5" />
             Recent Activity
@@ -115,7 +115,7 @@ const DashboardPage = async () => {
         <CardContent>
           {recentActivity.length > 0 ? (
             recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-start justify-between py-3 border-b last:border-0">
+              <div key={activity.id} className="flex items-start justify-between py-3">
                 <div className="flex-1">
                   <p className="font-medium text-sm">{activity.exerciseTitle}</p>
                   <div className="flex items-center gap-2 mt-1">
@@ -134,8 +134,11 @@ const DashboardPage = async () => {
 
       {/* Quick Actions */}
       <Card className="hover:shadow-lg transition-shadow duration-200">
-        <CardHeader className="flex items-center gap-2">
-          <CardTitle>Quick Actions</CardTitle>
+        <CardHeader className="flex items-center">
+          <CardTitle className="flex items-center gap-x-1">
+            <BoltIcon className="size-5" />
+            Quick Actions
+          </CardTitle>
           <CardDescription>Let's get started</CardDescription>
         </CardHeader>
         <CardContent>
@@ -170,7 +173,7 @@ const DashboardPage = async () => {
 function ModuleScore({ name, score, count }: { name: string; score: number; count: number }) {
   const percentage = (score / 9) * 100;
   return (
-    <div className="space-y-2 border border-gray-50 rounded-md p-4">
+    <div className="space-y-2 p-4">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">{name}</span>
         <span className="text-muted-foreground">

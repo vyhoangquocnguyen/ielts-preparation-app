@@ -1,13 +1,13 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { calculateStreak } from "../utils";
-// Get current user from database
+import { revalidatePath } from "next/cache";
 
+// Get current user from database
 export async function getCurrentUser() {
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
-    
   }
   const user = await prisma.user.findUnique({
     where: {
@@ -34,6 +34,35 @@ export async function getCurrentUser() {
   }
 
   return user;
+}
+// Update User profile
+export async function updateUserProfile(data: {
+  firstName?: string;
+  lastName?: string;
+  targetScore?: number;
+  studyGoal?: string;
+}) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  const user = await prisma.user.findUnique({
+    where: {
+      clerkId: userId,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data,
+  });
+  revalidatePath("/profile");
+  return { success: true };
 }
 
 // Get dashboard statistics for a user
@@ -139,6 +168,7 @@ export async function getDashboardStatistics(userId: string) {
   };
 }
 
+// Get recent activity for a user
 export async function getRecentActivity(userId: string, limit: number = 5) {
   const [listening, reading, writing, speaking] = await Promise.all([
     prisma.listeningAttempt.findMany({
@@ -256,4 +286,3 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
   // Sort by date and take top N
   return activities.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()).slice(0, limit);
 }
-
