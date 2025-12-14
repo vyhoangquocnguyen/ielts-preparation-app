@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: HomeIcon },
+  { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Listening", href: "/listening", icon: SpeakerWaveIcon },
   { name: "Reading", href: "/reading", icon: BookOpenIcon },
   { name: "Writing", href: "/writing", icon: PencilIcon },

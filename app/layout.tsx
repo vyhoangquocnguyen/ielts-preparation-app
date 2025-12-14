@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider, SignedOut, SignIn } from "@clerk/nextjs";
+import { Toaster } from "@/components/ui/sonner";
+import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/themeProvider";
 
 const inter = Inter({
@@ -27,6 +28,7 @@ export default function RootLayout({
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               {children}
             </ThemeProvider>
+            <Toaster />
           </ClerkProvider>
         </body>
       </html>
