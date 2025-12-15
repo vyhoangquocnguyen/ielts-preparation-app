@@ -13,7 +13,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
         {/* Content */}
         <main className="py-10">
-          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+          <div className="sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>

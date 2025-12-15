@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { updateUserProfile } from "@/lib/actions/user";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface ProfileFormProps {
   user: {
@@ -32,7 +33,6 @@ const ProfileForm = ({ user }: ProfileFormProps) => {
     };
     try {
       // Update user data
-
       await updateUserProfile(data);
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -83,7 +83,7 @@ const ProfileForm = ({ user }: ProfileFormProps) => {
       </div>
 
       <Button type="submit" disabled={loading}>
-        {loading ? "Saving..." : "Save Changes"}
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />  : "Save Changes"}
       </Button>
     </form>
   );

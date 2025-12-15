@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { calculateStreak } from "../utils";
 import { revalidatePath } from "next/cache";
+import { updateUserProfileSchema } from "../validation";
 
 // Get current user from database
 export async function getCurrentUser() {
@@ -36,35 +37,6 @@ export async function getCurrentUser() {
   }
 
   return user;
-}
-// Update User profile
-export async function updateUserProfile(data: {
-  firstName?: string;
-  lastName?: string;
-  targetScore?: number;
-  studyGoal?: string;
-}) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-  const user = await prisma.user.findUnique({
-    where: {
-      clerkId: userId,
-    },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data,
-  });
-  revalidatePath("/profile");
-  return { success: true };
 }
 
 // Get dashboard statistics for a user
@@ -287,4 +259,44 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
   ];
   // Sort by date and take top N
   return activities.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()).slice(0, limit);
+}
+
+// Update User profile
+export async function updateUserProfile(data: {
+  firstName?: string;
+  lastName?: string;
+  targetScore?: number;
+  studyGoal?: string;
+}) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  // Validate input
+  const validatedData = updateUserProfileSchema.parse(data);
+
+  // Get user
+  const user = await prisma.user.findUnique({
+    where: {
+      clerkId: userId,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Update user
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: validatedData,
+  });
+
+  // Revalidate cache
+  revalidatePath("/profile");
+
+  return { success: true };
 }
