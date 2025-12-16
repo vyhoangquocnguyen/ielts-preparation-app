@@ -33,6 +33,8 @@ export function getScoreColor(score: number) {
   }
   return "text-red-600 dark:text-red-400";
 }
+
+// Calculate streak
 export function calculateStreak(lastStudyDate: Date | null): {
   currentStreak: number;
   shouldReset: boolean;
@@ -68,4 +70,32 @@ export function calculateStreak(lastStudyDate: Date | null): {
       shouldReset: true,
     };
   }
+}
+
+// Calculate band score
+
+export function calculateBandScore(correctCount: number, totalQuestion: number): number {
+  const percentage = (correctCount / totalQuestion) * 100;
+  if (percentage >= 90) return 9;
+  if (percentage >= 82) return 8.5;
+  if (percentage >= 75) return 8;
+  if (percentage >= 68) return 7.5;
+  if (percentage >= 60) return 7;
+  if (percentage >= 52) return 6.5;
+  if (percentage >= 45) return 6;
+  if (percentage >= 37) return 5.5;
+  if (percentage >= 30) return 5;
+  if (percentage >= 23) return 4.5;
+  if (percentage >= 16) return 4;
+  if (percentage >= 10) return 3.5;
+  if (percentage >= 5) return 3;
+  return 2.5;
+}
+
+// Get Difficulty Color
+export function getDifficultyColor(difficulty: string) {
+  if (difficulty === "easy") return "bg-green-100 text-green-800";
+  if (difficulty === "medium") return "bg-yellow-100 text-yellow-800";
+  if (difficulty === "hard") return "bg-red-100 text-red-800";
+  return "bg-gray-100 text-gray-800";
 }
