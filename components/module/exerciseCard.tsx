@@ -6,7 +6,16 @@ import { ClockIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { Button } from "../ui/button";
 
-const ExerciseCard = ({ exercise }: { exercise: any }) => {
+type Exercise = {
+    id: string,
+    title: string,
+    description: string | null,
+    difficulty: string,
+    wordCount: number | null,
+    _count: { questions: number },
+}
+
+const ExerciseCard = ({ exercise }: { exercise: Exercise }) => {
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>

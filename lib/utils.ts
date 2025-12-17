@@ -99,3 +99,11 @@ export function getDifficultyColor(difficulty: string) {
   if (difficulty === "hard") return "bg-red-100 text-red-800";
   return "bg-gray-100 text-gray-800";
 }
+
+// Format time
+export function formatTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes === 0) return `${remainingSeconds}s`;
+  return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}m`;
+}

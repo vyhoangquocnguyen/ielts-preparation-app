@@ -2,22 +2,20 @@
 // Seed the database with sample data for testing
 
 import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaPg } from '@prisma/adapter-pg'
-import 'dotenv/config'
+import { PrismaPg } from "@prisma/adapter-pg";
+import "dotenv/config";
 
 const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
-})
+  connectionString: process.env.DATABASE_URL,
+});
 
 const prisma = new PrismaClient({
-    adapter,
-})
-
+  adapter,
+});
 
 async function main() {
   console.log("🌱 Starting database seed...");
 
-  
   // Create sample listening exercises
   const listeningExercise = await prisma.listeningExercise.create({
     data: {
@@ -65,16 +63,12 @@ async function main() {
       difficulty: "medium",
       category: "academic",
       passage: `The Internet has revolutionized the way we communicate, work, and access information. 
-      Its origins can be traced back to the 1960s when the United States Department of Defense 
-      developed ARPANET, a network designed to facilitate communication between research institutions. 
+      Its origins can be traced back to the 1960s when the United States Department of Defense developed ARPANET, a network designed to facilitate communication between research institutions. 
       
       In the 1980s, the development of TCP/IP protocols allowed different networks to connect, 
-      forming what we now know as the Internet. The World Wide Web, created by Tim Berners-Lee 
-      in 1989, made the Internet accessible to the general public through web browsers.
+      forming what we now know as the Internet. The World Wide Web, created by Tim Berners-Lee in 1989, made the Internet accessible to the general public through web browsers.
       
-      Today, billions of people use the Internet daily for various purposes, from social networking 
-      to online banking. The Internet of Things (IoT) is expanding its reach even further, 
-      connecting everyday devices to the network.`,
+      Today, billions of people use the Internet daily for various purposes, from social networking to online banking. The Internet of Things (IoT) is expanding its reach even further, connecting everyday devices to the network.`,
       wordCount: 150,
       isPublished: true,
       order: 1,
