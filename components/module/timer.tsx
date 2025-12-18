@@ -1,3 +1,4 @@
+'use client'
 import { cn, formatTime } from "@/lib/utils";
 import { ClockIcon } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
@@ -12,23 +13,49 @@ const Timer = (props: TimperProps) => {
   const { initialTime, onTimeUpdate, onTimeUp } = props;
   const [time, setTime] = useState(initialTime);
   const [hasFinished, setHasFinished] = useState(false);
+
+  // Use refs to store latest callbacks to avoid restarting the interval
+  const onTimeUpdateRef = React.useRef(onTimeUpdate);
+  const onTimeUpRef = React.useRef(onTimeUp);
+
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onTimeUpdate]);
+
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
+
+  // Separate effect for the countdown interval
   useEffect(() => {
     if (hasFinished) return;
+
     const interval = setInterval(() => {
       setTime((prevTime) => {
-        const newTime = prevTime - 1;
-        onTimeUpdate(initialTime - prevTime);
-        if (newTime <= 0) {
-          setHasFinished(true);
+        if (prevTime <= 1) {
           clearInterval(interval);
-          onTimeUp();
+          setHasFinished(true);
           return 0;
         }
-        return newTime;
+        return prevTime - 1;
       });
     }, 1000);
+
     return () => clearInterval(interval);
-  }, [initialTime, onTimeUpdate, hasFinished, onTimeUp]);
+  }, [hasFinished]);
+
+  // Side effect to update parent on time change
+  useEffect(() => {
+    const timeSpent = initialTime - time;
+    onTimeUpdateRef.current(timeSpent);
+  }, [time, initialTime]);
+
+  // Side effect when time runs out
+  useEffect(() => {
+    if (hasFinished) {
+      onTimeUpRef.current();
+    }
+  }, [hasFinished]);
   const isWarning = time <= 300 && time > 60;
   const isCritical = time <= 60;
   return (

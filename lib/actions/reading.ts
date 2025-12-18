@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { calculateBandScore } from "../utils";
 import { revalidatePath } from "next/cache";
-import { submitReadingSchema } from "../validation";
+import { submitReadingSchema, SubmitReadingInput } from "../validation";
 import { ZodError } from "zod";
 
 // Get reading exercises, fetch all exercises with questions
@@ -76,11 +76,7 @@ export async function getReadingExerciseById(exerciseId: string) {
 }
 
 // Submit and score answers
-export async function submitReadingAnswers(data: {
-  exerciseId: string;
-  answers: Record<string, string>;
-  timeSpent: number;
-}) {
+export async function submitReadingAnswers(data: SubmitReadingInput) {
   // 1. Get user id
   const { userId } = await auth();
   if (!userId) {

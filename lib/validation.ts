@@ -16,16 +16,29 @@ export const updateUserProfileSchema = z.object({
   timeZone: z.string().optional(),
 });
 
+// Reading
+export const readingAnswerSchema = z.object({
+  questionId: z.string().min(1, "Question ID is required"),
+  answer: z.string().min(1, "Answer is required"),
+});
 export const submitReadingSchema = z.object({
-  exerciseId: z.string(),
-  answers: z.array(
-    z.object({
-      questionId: z.string(),
-      answer: z.string(),
-    })
-  ),
+  exerciseId: z.string().min(1, "Exercise ID is required"),
+  answers: z.array(readingAnswerSchema).min(1, "At least one answer is required"),
+  timeSpent: z.number().int().positive(),
+});
+
+// Writing
+export const writingAnswerSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required"),
+  content: z.string().min(100, "Response must be at least 100 characters long"),
+  timeSpent: z.number().int().positive(),
+});
+export const submitWritingSchema = z.object({
+  exerciseId: z.string().min(1),
+  answers: z.array(writingAnswerSchema).min(1),
   timeSpent: z.number().int().positive(),
 });
 
 export type SubmitReadingInput = z.infer<typeof submitReadingSchema>;
+export type SubmitWritingInput = z.infer<typeof submitWritingSchema>;
 export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;

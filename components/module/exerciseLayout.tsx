@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { submitReadingAnswers } from "@/lib/actions/reading";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Button } from "../ui/button";
@@ -36,14 +36,19 @@ export function ExerciseLayout({ exercise }: { exercise: Exercise }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
 
-  const handleAnswerChange = (questionId: string, answer: string) => {
+  const handleAnswerChange = useCallback((questionId: string, answer: string) => {
     setAnswers((prevAnswers) => ({
       ...prevAnswers,
       [questionId]: answer,
     }));
-  };
-  const allQuestionsAnswered = exercise.questions.every((q) => answers[q.id] && answers[q.id].trim() !== "");
-  const handleSubmit = async () => {
+  }, []);
+
+  const allQuestionsAnswered = useMemo(
+    () => exercise.questions.every((q) => answers[q.id] && answers[q.id].trim() !== ""),
+    [exercise.questions, answers]
+  );
+
+  const handleSubmit = useCallback(async () => {
     // Check if all quetions are answered
     if (!allQuestionsAnswered) {
       toast.error("Please answer all questions before submitting.");
@@ -52,18 +57,28 @@ export function ExerciseLayout({ exercise }: { exercise: Exercise }) {
     setIsSubmitting(true);
 
     try {
+      // Convert answers object to array format for validation
+      const answerArray = exercise.questions.map((q) => ({
+        questionId: q.id,
+        answer: answers[q.id] || "",
+      }));
+
       const attemptId = await submitReadingAnswers({
         exerciseId: exercise.id,
-        answers,
+        answers: answerArray,
         timeSpent,
       });
       toast.success("Exercise submitted! Checking your answers...");
       router.push(`/reading/${exercise.id}/review/${attemptId}`);
     } catch (error) {
-      toast.error("Failed to submit answers. Please try again.");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to submit answers. Please try again.");
+      }
       setIsSubmitting(false);
     }
-  };
+  }, [allQuestionsAnswered, exercise.id, exercise.questions, answers, timeSpent, router]);
 
   return (
     <div className="container mx-auto px-4 py-6">
