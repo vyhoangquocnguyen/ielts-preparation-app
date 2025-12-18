@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { calculateBandScore } from "../utils";
 import { revalidatePath } from "next/cache";
+import { submitReadingSchema } from "../validation";
 
 // Get reading exercises, fetch all exercises with questions
 export async function getReadingExercises(difficulty?: string) {
@@ -82,9 +83,10 @@ export async function submitReadingAnswers(data: {
   if (!user) {
     throw new Error("User not found");
   }
-
+  // Validate input data
+  const validatedData = submitReadingSchema.parse(data);
   // 2. Fetch exercise with correct answers
-  const exercise = await getReadingExerciseById(data.exerciseId);
+  const exercise = await getReadingExerciseById(validatedData.exerciseId);
   if (!exercise) {
     throw new Error("Exercise not found");
   }

@@ -16,4 +16,16 @@ export const updateUserProfileSchema = z.object({
   timeZone: z.string().optional(),
 });
 
+export const submitReadingSchema = z.object({
+  exerciseId: z.string(),
+  answers: z.array(
+    z.object({
+      questionId: z.string(),
+      answer: z.string(),
+    })
+  ),
+  timeSpent: z.number().int().positive(),
+});
+
+export type SubmitReadingInput = z.infer<typeof submitReadingSchema>;
 export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
