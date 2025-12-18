@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { calculateBandScore } from "../utils";
 import { revalidatePath } from "next/cache";
 import { submitReadingSchema } from "../validation";
+import { ZodError } from "zod";
 
 // Get reading exercises, fetch all exercises with questions
 export async function getReadingExercises(difficulty?: string) {
@@ -13,10 +14,17 @@ export async function getReadingExercises(difficulty?: string) {
   if (!userId) {
     throw new Error("Unauthorized");
   }
+  // Validation difficulty if provided
+  if (difficulty) {
+    const validDifficulties = ["easy", "medium", "hard"];
+    if (!validDifficulties.includes(difficulty)) {
+      throw new Error("Invalid difficulty level");
+    }
+  }
   //2. Build database query
   const where = {
     isPublished: true,
-    ...(difficulty && { difficulty }),
+    ...(difficulty && { difficulty: difficulty }),
   };
   // 3.Fetch from database
   const exercises = await prisma.readingExercise.findMany({
@@ -41,6 +49,10 @@ export async function getReadingExerciseById(exerciseId: string) {
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
+  }
+  // Validate exerciseId format
+  if (!exerciseId || typeof exerciseId !== "string") {
+    throw new Error("Invalid exercise ID");
   }
   // 2. Fetch the exercise
   const exercise = prisma.readingExercise.findUnique({
@@ -84,18 +96,52 @@ export async function submitReadingAnswers(data: {
     throw new Error("User not found");
   }
   // Validate input data
-  const validatedData = submitReadingSchema.parse(data);
+  let validatedData;
+  try {
+    validatedData = submitReadingSchema.parse(data);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const errorMessage = error.issues.map((e) => e.message).join(", ");
+      throw new Error(`Validation failed: ${errorMessage}`);
+    }
+    throw new Error("Validation failed");
+  }
   // 2. Fetch exercise with correct answers
-  const exercise = await getReadingExerciseById(validatedData.exerciseId);
+  const exercise = await prisma.readingExercise.findUnique({
+    where: { id: validatedData.exerciseId },
+    include: {
+      questions: true,
+    },
+  });
   if (!exercise) {
     throw new Error("Exercise not found");
+  }
+  // Check that user answered the right number of questions
+  if (validatedData.answers.length !== exercise.questions.length) {
+    throw new Error(`Expected ${exercise.questions.length} answers, but received ${validatedData.answers.length}`);
+  }
+  // Check all question ids are valid
+  const validQuestionIds = new Set(exercise.questions.map((q) => q.id));
+  for (const answer of validatedData.answers) {
+    if (!validQuestionIds.has(answer.questionId)) {
+      throw new Error(`Invalid question ID: ${answer.questionId}`);
+    }
+  }
+
+  // Convert to RECORD Fromat
+
+  const answersRecord: Record<string, string> = {};
+  for (const answer of validatedData.answers) {
+    answersRecord[answer.questionId] = answer.answer;
   }
   // 3. Loop through questions and check answers
   let correctCount = 0;
   const totalQuestions = exercise.questions.length;
+
   for (const question of exercise.questions) {
-    const userAnswer = data.answers[question.id];
+    const userAnswer = answersRecord[question.id];
     const correctAnswer = question.correctAnswer;
+
     if (userAnswer && correctAnswer) {
       const normalizedUserAnswer = userAnswer.trim().toLowerCase();
       const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
@@ -114,24 +160,22 @@ export async function submitReadingAnswers(data: {
     data: {
       userId: user.id,
       exerciseId: exercise.id,
-      answers: data.answers,
+      answers: answersRecord,
       score: bandScore,
       correctCount,
       totalQuestions,
-      timeSpent: data.timeSpent,
+      timeSpent: validatedData.timeSpent,
       completed: true,
     },
   });
 
   // 6. Update user stats
   await prisma.user.update({
-    where: {
-      id: user.id,
-    },
+    where: { id: user.id },
     data: {
       lastStudyDate: new Date(),
       totalStudyTime: {
-        increment: Math.floor(data.timeSpent / 60),
+        increment: Math.floor(validatedData.timeSpent / 60),
       },
     },
   });
