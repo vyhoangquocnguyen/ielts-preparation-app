@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export async function generateMetadata({ params }: { params: { exerciseId: string } }) {
+  const { exerciseId } = await params;
   try {
-    const exercise = await getListeningExerciseById(params.exerciseId);
-
+    const exercise = await getListeningExerciseById(exerciseId);
     return {
       title: `${exercise.title} | IELTS Prep - Listening Practice`,
       description: exercise.description || "Practice IELTS listening with authentic materials",

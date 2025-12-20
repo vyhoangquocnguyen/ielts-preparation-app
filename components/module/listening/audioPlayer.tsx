@@ -1,10 +1,23 @@
+"use client";
+import { Slider } from "@/components/ui/slider";
 // Audio Player Component
 
-import { formatTime } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import { PauseIcon, PlayIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from "@heroicons/react/24/outline";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-const WAVEFORM_HEIGHTS = [...Array(40)].map(() => Math.random() * 80 + 20);
+// Simple deterministic random generator based on a seed string
+const getSeededRandom = (seed: string) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return () => {
+    hash = (hash * 1664525 + 1013904223) | 0;
+    return (hash >>> 0) / 4294967296;
+  };
+};
 
 type AudioPlayerProps = {
   audioUrl: string;
@@ -21,6 +34,22 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [volume, setVolume] = useState(50);
+
+  // Generate deterministic waveform based on audioUrl
+  const waveform = useMemo(() => {
+    const random = getSeededRandom(audioUrl);
+    return Array.from({ length: 40 }, () => random() * 80 + 20);
+  }, [audioUrl]);
+
+  // Sync audio properties with state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = volume / 100;
+    audio.playbackRate = speed;
+    audio.muted = isMuted;
+  }, [volume, speed, isMuted]);
 
   // EFFECTS: Setup audio event listeners
   useEffect(() => {
@@ -90,18 +119,21 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
   };
 
   const toggleMute = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
     setIsMuted(!isMuted);
-    if (audio) audio.muted = !isMuted;
   };
 
   // Handle Speed change
   const handleSpeedChange = (speed: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.playbackRate = speed;
     setSpeed(speed);
+  };
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+
+    // Auto-unmute when adjusting volume
+    if (newVolume > 0 && isMuted) {
+      setIsMuted(false);
+    }
   };
 
   // Handle seek
@@ -181,13 +213,13 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
         <div className="relative group">
           {/* Waveform Illusion */}
           <div className="flex items-center justify-between gap-0.5 h-12 opacity-20 group-hover:opacity-40 transition-opacity px-1">
-            {WAVEFORM_HEIGHTS.map((height, i) => (
+            {waveform.map((height: number, i: number) => (
               <div
                 key={i}
                 className="w-1 bg-cyan-400 rounded-full transition-all duration-300"
                 style={{
                   height: `${height}%`,
-                  opacity: i / WAVEFORM_HEIGHTS.length < currentTime / duration ? 1 : 0.3,
+                  opacity: i / waveform.length < currentTime / duration ? 1 : 0.3,
                 }}
               />
             ))}
@@ -213,13 +245,21 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
           />
         </div>
 
-        {/* Time Labels & Mute */}
+        {/* Time Labels & Volume & Mute */}
         <div className="flex justify-between items-center text-[10px] font-bold tracking-tighter uppercase text-white/30">
           <span>{formatTime(currentTime)}</span>
-
-          <button onClick={toggleMute} className="hover:text-cyan-400 transition transform hover:scale-110">
-            {isMuted ? <SpeakerXMarkIcon className="w-4 h-4" /> : <SpeakerWaveIcon className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <Slider
+              value={[volume]}
+              max={100}
+              step={1}
+              onValueChange={handleVolumeChange}
+              className="w-[100px] transition transform hover:scale-110"
+            />
+            <button onClick={toggleMute} className="hover:text-cyan-400 transition transform hover:scale-110">
+              {isMuted ? <SpeakerXMarkIcon className="w-4 h-4" /> : <SpeakerWaveIcon className="w-4 h-4" />}
+            </button>
+          </div>
 
           <span>{formatTime(duration)}</span>
         </div>
@@ -231,9 +271,3 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
 }
 
 export default AudioPlayer;
-// Play/Pause Button
-// Mute/Unmute Button
-// Volume Slider
-// Current Time
-// Total Time
-// Progress Bar
