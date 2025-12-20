@@ -90,6 +90,7 @@
     @apply bg-gray-400 dark:bg-gray-600;
   }
 
+  
   /* Animations */
   @keyframes slide-in-from-right {
     from {
@@ -118,6 +119,8 @@
     }
   }
 
+
+
   .animate-slide-in-right {
     animation: slide-in-from-right 0.3s ease-out;
   }
@@ -139,4 +142,15 @@
   .glass {
     @apply bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl;
   }
+}
+
+/* Custom range styles for Chrome/Safari */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: #22d3ee; /* cyan-400 */
+  box-shadow: 0 0 10px #22d3ee;
+  border: 2px solid white;
 }

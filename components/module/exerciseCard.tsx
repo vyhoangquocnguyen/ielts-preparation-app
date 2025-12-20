@@ -1,21 +1,28 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDifficultyColor } from "@/lib/utils";
-import { BookOpenIcon } from "lucide-react";
-import { ClockIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { Button } from "../ui/button";
 
-type Exercise = {
-    id: string,
-    title: string,
-    description: string | null,
-    difficulty: string,
-    wordCount: number | null,
-    _count: { questions: number },
+import { ModuleType } from "@/types";
+
+interface Exercise {
+  id: string;
+  title: string;
+  description: string | null;
+  difficulty: string;
+  wordCount?: number | null;
+  duration?: number | null;
+  _count: { questions: number };
 }
 
-const ExerciseCard = ({ exercise }: { exercise: Exercise }) => {
+interface ExerciseCardProps {
+  exercise: Exercise;
+  moduleType: ModuleType;
+}
+
+const ExerciseCard = ({ exercise, moduleType }: ExerciseCardProps) => {
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -31,20 +38,26 @@ const ExerciseCard = ({ exercise }: { exercise: Exercise }) => {
       <CardContent className="space-y-4">
         {/* Stats */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <BookOpenIcon className="w-4 h-4" />
-            <span>{exercise.wordCount || "~800"} words</span>
-          </div>
+          {moduleType === "reading" ? (
+            <div className="flex items-center gap-1">
+              <BookOpenIcon className="w-4 h-4" />
+              <span>{exercise.wordCount || "0"} words</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <ClockIcon className="w-4 h-4" />
+              <span>{exercise.duration || "0"} min</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-1">
-            <ClockIcon className="w-4 h-4" />
-            <span>60 min</span>
+            <span className="bg-white/5 px-2 py-0.5 rounded border border-white/10">
+              {exercise._count.questions} Qs
+            </span>
           </div>
         </div>
-
-        <div className="text-sm text-muted-foreground">{exercise._count.questions} questions</div>
         {/* Start Button */}
-        <Link href={`/reading/${exercise.id}`}>
+        <Link href={`/${moduleType}/${exercise.id}`}>
           <Button className="w-full">Start Exercise</Button>
         </Link>
       </CardContent>

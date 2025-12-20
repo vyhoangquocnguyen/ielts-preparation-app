@@ -4,39 +4,79 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { BookOpenIcon } from "lucide-react";
 import ExerciseCard from "./exerciseCard";
+import { ModuleType } from "@/types";
 
-type Exercise = {
+interface Exercise {
   id: string;
   title: string;
   description: string | null;
   difficulty: string;
-  wordCount: number | null;
+  category: string;
+  wordCount?: number | null;
+  duration?: number | null;
   _count: { questions: number };
-};
-const FilterableExerciseList = ({ exercises }: { exercises: Exercise[] }) => {
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+}
 
-  const filteredExercise =
-    selectedFilter === "all" ? exercises : exercises.filter((exercise) => exercise.difficulty === selectedFilter);
+interface FilterProps {
+  exercises: Exercise[];
+  moduleType: ModuleType;
+}
+const FilterableExerciseList = ({ exercises, moduleType }: FilterProps) => {
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const filter = [
+  const filteredExercise = exercises.filter((exercise) => {
+    const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
+    const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
+    return matchesDifficulty && matchesCategory;
+  });
+
+  const difficulties = [
     { label: "All", value: "all" },
     { label: "Easy", value: "easy" },
     { label: "Medium", value: "medium" },
     { label: "Hard", value: "hard" },
   ];
+  const categories = [
+    { label: "All", value: "all" },
+    { label: "Academic", value: "academic" },
+    { label: "General", value: "general" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {filter.map((filter) => (
-          <Button
-            key={filter.value}
-            variant={selectedFilter === filter.value ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedFilter(filter.value)}>
-            {filter.label}
-          </Button>
-        ))}
+      <div className="flex flex-wrap items-end gap-6 bg-white/5 p-4 rounded-xl border border-white/10">
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-2">Difficulty</label>
+          <div className="flex flex-wrap gap-2">
+            {difficulties.map((f) => (
+              <Button
+                key={f.value}
+                variant={difficultyFilter === f.value ? "default" : "outline"}
+                size="sm"
+                className="rounded-lg"
+                onClick={() => setDifficultyFilter(f.value)}>
+                {f.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((f) => (
+              <Button
+                key={f.value}
+                variant={categoryFilter === f.value ? "default" : "outline"}
+                size="sm"
+                className="rounded-lg"
+                onClick={() => setCategoryFilter(f.value)}>
+                {f.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="text-sm text-muted-foreground">
         Showing {filteredExercise.length} {filteredExercise.length === 1 ? "exercise" : "exercises"}
@@ -50,7 +90,7 @@ const FilterableExerciseList = ({ exercises }: { exercises: Exercise[] }) => {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredExercise.map((exercise) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} />
+            <ExerciseCard key={exercise.id} exercise={exercise} moduleType={moduleType} />
           ))}
         </div>
       )}

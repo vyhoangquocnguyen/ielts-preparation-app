@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { getReadingExercises } from "@/lib/actions/reading";
 import FilterableExerciseList from "@/components/module/filterExerciseList";
+import { Suspense } from "react";
 
 const ReadingPracticePage = async () => {
   const exercises = await getReadingExercises();
@@ -23,8 +24,9 @@ const ReadingPracticePage = async () => {
           </div>
         </div>
       </div>
-
-      <FilterableExerciseList exercises={exercises} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <FilterableExerciseList exercises={exercises} moduleType="reading" />
+      </Suspense>
     </div>
   );
 };

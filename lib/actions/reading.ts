@@ -8,23 +8,31 @@ import { submitReadingSchema, SubmitReadingInput } from "../validation";
 import { ZodError } from "zod";
 
 // Get reading exercises, fetch all exercises with questions
-export async function getReadingExercises(difficulty?: string) {
+export async function getReadingExercises(filter?: { difficulty?: string; category?: string }) {
   //1. Authenticated use
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
   }
   // Validation difficulty if provided
-  if (difficulty) {
+  if (filter?.difficulty) {
     const validDifficulties = ["easy", "medium", "hard"];
-    if (!validDifficulties.includes(difficulty)) {
+    if (!validDifficulties.includes(filter.difficulty)) {
       throw new Error("Invalid difficulty level");
+    }
+  }
+
+  if (filter?.category) {
+    const validCategories = ["academic", "general"];
+    if (!validCategories.includes(filter.category)) {
+      throw new Error("Invalid category");
     }
   }
   //2. Build database query
   const where = {
     isPublished: true,
-    ...(difficulty && { difficulty: difficulty }),
+    difficulty: filter?.difficulty,
+    category: filter?.category,
   };
   // 3.Fetch from database
   const exercises = await prisma.readingExercise.findMany({
@@ -124,7 +132,7 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
     }
   }
 
-  // Convert to RECORD Fromat
+  // Convert to RECORD Format
 
   const answersRecord: Record<string, string> = {};
   for (const answer of validatedData.answers) {
