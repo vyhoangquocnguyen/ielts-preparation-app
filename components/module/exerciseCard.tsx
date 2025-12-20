@@ -1,11 +1,11 @@
-import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import Link from "next/link";
 import { getDifficultyColor } from "@/lib/utils";
 import { ClockIcon, BookOpenIcon } from "@heroicons/react/24/outline";
-import Link from "next/link";
-import { Button } from "../ui/button";
-
 import { ModuleType } from "@/types";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 
 interface Exercise {
   id: string;

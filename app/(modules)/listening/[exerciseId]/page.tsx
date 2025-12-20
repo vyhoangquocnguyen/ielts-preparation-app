@@ -1,8 +1,5 @@
-import { ExerciseLayout } from "@/components/module/exerciseLayout";
-import { Button } from "@/components/ui/button";
+import ListeningExerciseLayout from "@/components/module/listening/listeningExerciseLayout";
 import { getListeningExerciseById } from "@/lib/actions/listening";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -47,7 +44,9 @@ const ListeningExercisePage = async ({ params }: { params: { exerciseId: string 
           </div>
         </div>
       </div>
-      {/* <ExerciseLayout exercise={exercise} /> */}
+      <Suspense fallback={<div>Loading...</div>}>
+        <ListeningExerciseLayout exercise={exercise} />
+      </Suspense>
     </div>
   );
 };

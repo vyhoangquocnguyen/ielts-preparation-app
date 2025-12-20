@@ -7,9 +7,11 @@ import { useEffect, useState } from "react";
 import { submitListeningAnswers } from "@/lib/actions/listening";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link } from "lucide-react";
+import { Link, Send } from "lucide-react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Timer from "../timer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import QuestionsPanel from "../reading/questionsPanel";
 interface Props {
   exercise: ListeningExerciseWithQuestions;
 }
@@ -17,7 +19,7 @@ interface Props {
 export default function ListeningExerciseLayout({ exercise }: Props) {
   const { id, title, description, audioUrl } = exercise;
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
 
   // Initialize state from sessionStorage (Hydration-safe)
@@ -68,7 +70,7 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
       return;
     }
 
-    setSubmitting(true);
+    setIsSubmitting(true);
 
     const answerArray = exercise.questions.map((question) => ({
       questionId: question.id,
@@ -84,18 +86,23 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
       {
         loading: "Submitting your answers...",
         success: (attemptId) => {
-          setSubmitting(false);
+          setIsSubmitting(false);
+          sessionStorage.removeItem(`listening-${id}`);
           router.push(`/listening/${id}/review/${attemptId}`);
           return "Exercise submitted! Checking your answers...";
         },
         error: (err) => {
-          setSubmitting(false);
+          setIsSubmitting(false);
           console.error("Submission error:", err);
           return err instanceof Error ? err.message : "Failed to submit answers. Please try again.";
         },
       }
     );
   };
+  const answeredCount = Object.values(answers).filter((a) => a && a.trim() !== "").length;
+  const totalQuestions = exercise.questions.length;
+  const progressPercentage = (answeredCount / totalQuestions) * 100;
+
   return (
     <div>
       {/* Back Button + Timer Row */}
@@ -108,8 +115,67 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
         </Link>
         <Timer initialTime={2400} onTimeUpdate={setTimeSpent} onTimeUp={handleSubmit} />
       </div>
-      <p>{description}</p>
-      <AudioPlayer audioUrl={audioUrl} />
+      <div className="flex item-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
+        </div>
+        {exercise.description && <p className="text-muted-foreground mt-1">{exercise.description}</p>}
+      </div>
+      {/* Progress Bar */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+          <span>
+            Progress: {answeredCount}/{exercise.questions.length}
+          </span>
+          <span>{Math.floor(progressPercentage)}%</span>
+        </div>
+        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-300"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+      {/* Main Content */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="lg:sticky lg:top-6 h-fit">
+          <CardHeader>
+            <CardTitle>Audio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AudioPlayer audioUrl={exercise.audioUrl} />
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <strong>Instructions:</strong> Listen to the audio and answer the questions.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Questions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <QuestionsPanel questions={exercise.questions} answers={answers} onAnswerChange={handleAnswerChange} />
+            {/* Submit Button */}
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <Button onClick={handleSubmit} disabled={isSubmitting} size="lg" className="w-full">
+                {isSubmitting ? (
+                  "Submitting..."
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Submit Answers
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+                Make sure you've answered all questions before submitting
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
