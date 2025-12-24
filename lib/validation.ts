@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const StudyGoalSchema = z.enum(["academic", "general"]);
+
 export const updateUserProfileSchema = z.object({
   firstName: z
     .string()
@@ -12,7 +14,7 @@ export const updateUserProfileSchema = z.object({
     .max(50, "Last name must be at most 50 characters long")
     .optional(),
   targetScore: z.number().min(5, "Target score must be at least 5").max(9, "Target score must be at most 9").optional(),
-  studyGoal: z.enum(["academic", "general"]).optional(),
+  studyGoal: StudyGoalSchema.optional(),
   timeZone: z.string().optional(),
 });
 

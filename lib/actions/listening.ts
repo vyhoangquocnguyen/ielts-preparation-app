@@ -197,3 +197,48 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     throw new Error("Failed to submit answers");
   }
 }
+
+/**** Get listening Attempt    *****/
+export async function getListeningAttempt(attemptId: string) {
+  try {
+    // 1. Authenticate user
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
+    const user = await prisma.user.findUnique({
+      where: {
+        clerkId: userId,
+      },
+    });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    // 2. Validate id
+    if (!attemptId || typeof attemptId !== "string") {
+      throw new Error("Invalid attempt ID");
+    }
+    // 3. Fetch attempt
+    const attempt = await prisma.listeningAttempt.findUnique({
+      where: { id: attemptId, userId: user.id },
+      include: {
+        exercise: {
+          include: {
+            questions: {
+              orderBy: {
+                questionNumber: "asc",
+              },
+            },
+          },
+        },
+      },
+    });
+    // 4. Handle not found
+    if (!attempt) {
+      throw new Error("Attempt not found");
+    }
+    // 5. Return attempt
+    return attempt;
+  } catch (error) {
+    console.error("Error fetching attempt:", error);
+    throw new Error("Failed to fetch attempt");
+  }
+}

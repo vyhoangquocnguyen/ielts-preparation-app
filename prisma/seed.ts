@@ -183,6 +183,7 @@ You will have 1 minute to prepare and 2 minutes to speak.`,
   console.log("🎉 Database seed completed successfully!");
 }
 
+
 main()
   .catch((e) => {
     console.error("❌ Seed error:", e);

@@ -36,14 +36,14 @@ const ListeningExercisePage = async ({ params }: { params: { exerciseId: string 
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b glass sticky top-0 z-10">
+      {/* <div className="border-b rounded-2xl glass sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">{exercise.title}</h1>
             <p className="text-sm text-muted-foreground">{exercise.questions.length} questions - 60 minutes</p>
           </div>
         </div>
-      </div>
+      </div> */}
       <Suspense fallback={<div>Loading...</div>}>
         <ListeningExerciseLayout exercise={exercise} />
       </Suspense>

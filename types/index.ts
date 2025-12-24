@@ -1,52 +1,13 @@
-import {
-  User,
-  ListeningExercise,
-  ListeningQuestion,
-  ReadingExercise,
-  ReadingQuestion,
-  WritingTask,
-  SpeakingExercise,
-} from "@/app/generated/prisma/client";
+import { Prisma } from "@/app/generated/prisma/client";
 
-// MODULE TYPES
+// --- ENUMS & BASE TYPES ---
+
 export type ModuleType = "listening" | "reading" | "writing" | "speaking";
-
 export type Difficulty = "easy" | "medium" | "hard";
-
 export type StudyGoal = "academic" | "general";
 
-// EXTENDED TYPES (with relations)
-export type ListeningExerciseWithQuestions = ListeningExercise & {
-  questions: ListeningQuestion[];
-};
+// --- SHARED INTERFACES ---
 
-export type ReadingExerciseWithQuestions = ReadingExercise & {
-  questions: ReadingQuestion[];
-};
-
-// DASHBOARD TYPE
-export interface DashboardStats {
-  totalStudyTime: number; // minutes
-  currentStreak: number;
-  longestStreak: number;
-  exercisesCompleted: number;
-  averageScores: {
-    listening: number;
-    reading: number;
-    writing: number;
-    speaking: number;
-  };
-}
-
-export interface RecentActivity {
-  id: string;
-  moduleType: ModuleType;
-  exerciseTitle: string;
-  score: number;
-  completedAt: Date;
-}
-
-// ATTEMPT TYPE
 export interface AttemptAnswer {
   questionId: string;
   userAnswer: string;
@@ -64,7 +25,7 @@ export interface AttemptSummary {
   timeSpent: number; // seconds
 }
 
-// FEEDBACKS TYPE
+// --- FEEDBACK INTERFACES ---
 
 export interface CriteriaFeedback {
   score: number;
@@ -92,7 +53,70 @@ export interface SpeakingFeedbackDetailed {
   improvements: string[];
 }
 
-// ANALYTICS TYPES
+// --- PRISMA-LINKED TYPES (EXTENDED) ---
+
+export type ListeningExerciseWithQuestions = Prisma.ListeningExerciseGetPayload<{
+  include: { questions: true };
+}>;
+
+export type ReadingExerciseWithQuestions = Prisma.ReadingExerciseGetPayload<{
+  include: { questions: true };
+}>;
+
+export type ListeningAttemptWithExercise = Prisma.ListeningAttemptGetPayload<{
+  include: { exercise: { include: { questions: true } } };
+}>;
+
+export type ReadingAttemptWithExercise = Prisma.ReadingAttemptGetPayload<{
+  include: { exercise: { include: { questions: true } } };
+}>;
+
+export type WritingAttemptWithTask = Prisma.WritingAttemptGetPayload<{
+  include: { task: true };
+}>;
+
+export type SpeakingAttemptWithExercise = Prisma.SpeakingAttemptGetPayload<{
+  include: { exercise: true };
+}>;
+
+// UNION TYPES
+export type AnyAttempt =
+  | ListeningAttemptWithExercise
+  | ReadingAttemptWithExercise
+  | WritingAttemptWithTask
+  | SpeakingAttemptWithExercise;
+
+import type { WritingTask, SpeakingExercise, ListeningExercise, ReadingExercise } from "@/app/generated/prisma/client";
+
+export type AnyExercise =
+  | ListeningExerciseWithQuestions
+  | ReadingExerciseWithQuestions
+  | WritingTask
+  | SpeakingExercise;
+
+// --- DASHBOARD & ANALYTICS ---
+
+export interface DashboardStats {
+  totalStudyTime: number; // minutes
+  currentStreak: number;
+  longestStreak: number;
+  exercisesCompleted: number;
+  averageScores: {
+    listening: number;
+    reading: number;
+    writing: number;
+    speaking: number;
+  };
+}
+
+export interface RecentActivity {
+  id: string;
+  moduleType: ModuleType;
+  exerciseTitle: string;
+  score: number;
+  completedAt: Date;
+}
+
 export interface MonthlyAnalytics {
   month: string; // "2024-01"
   listeningAvg: number;
@@ -109,7 +133,8 @@ export interface ProgressData {
   moduleType: ModuleType;
 }
 
-// AUDIO TYPES
+// --- AUDIO TYPES ---
+
 export interface AudioWord {
   word: string;
   start: number;
@@ -124,4 +149,17 @@ export interface TranscriptionData {
   duration: number;
 }
 
-// API RESPONSE TYPES
+// Re-export Prisma types
+export type {
+  User,
+  ListeningExercise,
+  ListeningQuestion,
+  ReadingExercise,
+  ReadingQuestion,
+  WritingTask,
+  SpeakingExercise,
+  ListeningAttempt,
+  ReadingAttempt,
+  WritingAttempt,
+  SpeakingAttempt,
+} from "@/app/generated/prisma/client";

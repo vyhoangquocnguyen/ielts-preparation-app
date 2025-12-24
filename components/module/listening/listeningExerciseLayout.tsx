@@ -1,23 +1,27 @@
 "use client";
 
-import { ListeningExerciseWithQuestions } from "@/types";
-import AudioPlayer from "@/components/module/listening/audioPlayer";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
 import { submitListeningAnswers } from "@/lib/actions/listening";
+
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Link, Send } from "lucide-react";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import Timer from "../timer";
+import { ArrowLeftIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { ListeningExerciseWithQuestions } from "@/types";
+
+import Timer from "../timer";
+import AudioPlayer from "@/components/module/listening/audioPlayer";
+import { Button } from "@/components/ui/button";
 import QuestionsPanel from "../reading/questionsPanel";
 interface Props {
   exercise: ListeningExerciseWithQuestions;
 }
 
 export default function ListeningExerciseLayout({ exercise }: Props) {
-  const { id, title, description, audioUrl } = exercise;
+  const { id, title, description,questions, audioUrl } = exercise;
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
@@ -104,7 +108,7 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
   const progressPercentage = (answeredCount / totalQuestions) * 100;
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6">
       {/* Back Button + Timer Row */}
       <div className="flex items-center justify-between mb-6">
         <Link href="/listening">
@@ -119,13 +123,13 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
         </div>
-        {exercise.description && <p className="text-muted-foreground mt-1">{exercise.description}</p>}
+        {description && <p className="text-muted-foreground mt-1">{description}</p>}
       </div>
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
           <span>
-            Progress: {answeredCount}/{exercise.questions.length}
+            Progress: {answeredCount}/{questions.length}
           </span>
           <span>{Math.floor(progressPercentage)}%</span>
         </div>
@@ -143,7 +147,7 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
             <CardTitle>Audio</CardTitle>
           </CardHeader>
           <CardContent>
-            <AudioPlayer audioUrl={exercise.audioUrl} />
+            <AudioPlayer audioUrl={audioUrl} />
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-sm text-blue-900 dark:text-blue-100">
                 <strong>Instructions:</strong> Listen to the audio and answer the questions.
@@ -156,7 +160,7 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
             <CardTitle>Questions</CardTitle>
           </CardHeader>
           <CardContent>
-            <QuestionsPanel questions={exercise.questions} answers={answers} onAnswerChange={handleAnswerChange} />
+            <QuestionsPanel questions={questions} answers={answers} onAnswerChange={handleAnswerChange} />
             {/* Submit Button */}
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Button onClick={handleSubmit} disabled={isSubmitting} size="lg" className="w-full">
@@ -164,7 +168,7 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
                   "Submitting..."
                 ) : (
                   <>
-                    <Send className="w-4 h-4 mr-2" />
+                    <PaperAirplaneIcon className="w-4 h-4 mr-2" />
                     Submit Answers
                   </>
                 )}
