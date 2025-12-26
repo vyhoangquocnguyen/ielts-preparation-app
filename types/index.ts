@@ -31,7 +31,7 @@ export interface CriteriaFeedback {
   score: number;
   comments: string;
   suggestions?: string[];
-  error?: string[];
+  errors?: string[]; // Used for Grammatical Accuracy
 }
 
 export interface WritingFeedbackDetailed {
@@ -41,7 +41,8 @@ export interface WritingFeedbackDetailed {
   lexicalResource: CriteriaFeedback;
   grammaticalAccuracy: CriteriaFeedback;
   improvements: string[];
-  rewrittenSample: string;
+  strengths: string[];
+  rewrittenSample?: string;
 }
 
 export interface SpeakingFeedbackDetailed {
@@ -86,13 +87,30 @@ export type AnyAttempt =
   | WritingAttemptWithTask
   | SpeakingAttemptWithExercise;
 
-import type { WritingTask, SpeakingExercise, ListeningExercise, ReadingExercise } from "@/app/generated/prisma/client";
+import type { WritingTask, SpeakingExercise } from "@/app/generated/prisma/client";
 
-export type AnyExercise =
-  | ListeningExerciseWithQuestions
-  | ReadingExerciseWithQuestions
-  | WritingTask
-  | SpeakingExercise;
+export interface BaseExercise {
+  id: string;
+  title: string;
+  description?: string | null;
+  difficulty?: string;
+  category?: string;
+  taskType?: string;
+  part?: string;
+  isPublished: boolean;
+  order: number;
+  wordCount?: number | null;
+  minWords?: number | null;
+  duration?: number | null;
+  speakingTime?: number | null;
+  _count?: {
+    questions?: number;
+    tasks?: number;
+  };
+}
+
+export type AnyExercise = BaseExercise &
+  (ListeningExerciseWithQuestions | ReadingExerciseWithQuestions | WritingTask | SpeakingExercise);
 
 // --- DASHBOARD & ANALYTICS ---
 

@@ -34,40 +34,29 @@ export function getScoreColor(score: number) {
 }
 
 // Calculate streak
-export function calculateStreak(lastStudyDate: Date | null): {
-  currentStreak: number;
-  shouldReset: boolean;
-} {
-  if (!lastStudyDate) {
-    return {
-      currentStreak: 0,
-      shouldReset: false,
-    };
-  }
+// Calculate streak
+export function calculateNewStreak(currentStreak: number, lastStudyDate: Date | null): number {
   const today = new Date();
-  const lastStudy = new Date(lastStudyDate);
-
-  // Set both dates to midnight for comparison
   today.setHours(0, 0, 0, 0);
-  lastStudy.setHours(0, 0, 0, 0);
 
-  const diffInDays = Math.floor((today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24));
+  const lastStudy = lastStudyDate ? new Date(lastStudyDate) : null;
+  if (lastStudy) lastStudy.setHours(0, 0, 0, 0);
+
+  // If never studied or last study was before yesterday, reset to 1
+  if (!lastStudy) return 1;
+
+  const diffInTime = today.getTime() - lastStudy.getTime();
+  const diffInDays = diffInTime / (1000 * 3600 * 24);
 
   if (diffInDays === 0) {
-    return {
-      currentStreak: 1,
-      shouldReset: false,
-    };
+    // Studied today already, keep same streak
+    return currentStreak;
   } else if (diffInDays === 1) {
-    return {
-      currentStreak: 1,
-      shouldReset: false,
-    };
+    // Studied yesterday, increment streak
+    return currentStreak + 1;
   } else {
-    return {
-      currentStreak: 1,
-      shouldReset: true,
-    };
+    // Missed a day or more, reset to 1
+    return 1;
   }
 }
 

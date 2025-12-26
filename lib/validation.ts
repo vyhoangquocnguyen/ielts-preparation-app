@@ -33,11 +33,13 @@ export const submitReadingSchema = z.object({
 export const writingAnswerSchema = z.object({
   taskId: z.string().min(1, "Task ID is required"),
   content: z.string().min(100, "Response must be at least 100 characters long"),
+  wordCount: z.number().int().positive(),
   timeSpent: z.number().int().positive(),
 });
 export const submitWritingSchema = z.object({
-  exerciseId: z.string().min(1),
-  answers: z.array(writingAnswerSchema).min(1),
+  taskId: z.string().min(1),
+  content: z.string().min(100, "Response must be at least 100 characters long"),
+  wordCount: z.number().int().positive(),
   timeSpent: z.number().int().positive(),
 });
 
@@ -51,6 +53,8 @@ export const submitListeningSchema = z.object({
   answers: z.array(listeningAnswerSchema).min(1, "At least one answer is required"),
   timeSpent: z.number().int().positive(),
 });
+
+
 
 export type SubmitListeningInput = z.infer<typeof submitListeningSchema>;
 export type SubmitReadingInput = z.infer<typeof submitReadingSchema>;

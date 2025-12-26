@@ -1,11 +1,11 @@
-'use client'
+"use client";
 import { cn, formatTime } from "@/lib/utils";
 import { ClockIcon } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 
 type TimperProps = {
   initialTime: number;
-  onTimeUpdate: (timeSpent: number) => void;
+  onTimeUpdate?: (timeSpent: number) => void;
   onTimeUp: () => void;
 };
 
@@ -25,6 +25,11 @@ const Timer = (props: TimperProps) => {
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
+
+  const initialTimeRef = React.useRef(initialTime);
+  useEffect(() => {
+    initialTimeRef.current = initialTime;
+  }, [initialTime]);
 
   // Separate effect for the countdown interval
   useEffect(() => {
@@ -46,9 +51,11 @@ const Timer = (props: TimperProps) => {
 
   // Side effect to update parent on time change
   useEffect(() => {
-    const timeSpent = initialTime - time;
-    onTimeUpdateRef.current(timeSpent);
-  }, [time, initialTime]);
+    const timeSpent = initialTimeRef.current - time;
+    if (onTimeUpdateRef.current) {
+      onTimeUpdateRef.current(timeSpent);
+    }
+  }, [time]);
 
   // Side effect when time runs out
   useEffect(() => {
@@ -68,7 +75,7 @@ const Timer = (props: TimperProps) => {
       )}>
       <ClockIcon className="w-5 h-5" />
       <span>{formatTime(time)}</span>
-      {hasFinished && <span className="text-sm font-normal">Time's up!</span>}
+      {hasFinished && <span className="text-sm font-normal">Time&apos;s up!</span>}
     </div>
   );
 };

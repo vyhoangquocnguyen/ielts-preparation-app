@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { calculateStreak } from "../utils";
+import { calculateNewStreak } from "../utils";
 import { revalidatePath } from "next/cache";
 import { updateUserProfileSchema } from "../validation";
 
@@ -20,20 +20,18 @@ export async function getCurrentUser() {
   if (!user) {
     throw new Error("User not found");
   }
-  // Update streak if needed
-  const { currentStreak, shouldReset } = calculateStreak(user.lastStudyDate);
 
-  if (shouldReset) {
-    await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        currentStreak: currentStreak,
-        lastStudyDate: new Date(),
-      },
+  // Update streak if needed
+  const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
+
+  // If streak changed or we want to update last seen/study date (optional here,
+  // but let's at least ensure streak is consistent)
+  if (newStreak !== user.currentStreak) {
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { currentStreak: newStreak },
     });
-    user.currentStreak = currentStreak;
+    return updatedUser;
   }
 
   return user;

@@ -11,7 +11,7 @@ interface ReviewLayoutProps {
   moduleType: ModuleType;
 }
 
-export default async function ReviewLayout({ attempt, moduleType }: ReviewLayoutProps) {
+export default function ReviewLayout({ attempt, moduleType }: ReviewLayoutProps) {
   const { exercise, exerciseId, answers, score, correctCount, totalQuestions, timeSpent } = attempt;
   const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
@@ -27,7 +27,8 @@ export default async function ReviewLayout({ attempt, moduleType }: ReviewLayout
       </div>
       {/* Score Card */}
       <Card>
-        <CardHeader className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
+          {" "}
           <CardTitle className="text-center">Your Result</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
@@ -78,16 +79,16 @@ export default async function ReviewLayout({ attempt, moduleType }: ReviewLayout
         </Link>
       </div>
       {/* Transcript for listening exercises */}
-        {moduleType === "listening" && transcript && (
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>📝 Transcript</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TranscriptViewer transcript={transcript} />
-            </CardContent>
-          </Card>
-        )}
+      {moduleType === "listening" && transcript && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>📝 Transcript</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TranscriptViewer transcript={transcript} />
+          </CardContent>
+        </Card>
+      )}
       {/* Question by Questions Review */}
       <div className="space-y-4 mt-4">
         <h2 className="text-2xl font-bold mb-4">Answer Review</h2>

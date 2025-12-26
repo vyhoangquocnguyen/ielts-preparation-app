@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { calculateBandScore } from "../utils";
+import { calculateBandScore, calculateNewStreak } from "../utils";
 import { revalidatePath } from "next/cache";
 import { submitReadingSchema, SubmitReadingInput } from "../validation";
 import { ZodError } from "zod";
@@ -104,7 +104,7 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
       throw new Error("User not found");
     }
     // Validate input data
-    let validatedData;
+    let validatedData: SubmitReadingInput;
     try {
       validatedData = submitReadingSchema.parse(data);
     } catch (error) {
@@ -177,14 +177,56 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
       },
     });
 
-    // 6. Update user stats
+    // 6. Update user stats & analytics
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0);
+
+    // Recalculate monthly average for Reading
+    const monthlyStats = await prisma.readingAttempt.aggregate({
+      where: {
+        userId: user.id,
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+      },
+      _avg: { score: true },
+    });
+
+    const realAverage = monthlyStats._avg.score || bandScore;
+
+    // Update Analytics
+    await prisma.userAnalytics.upsert({
+      where: {
+        userId_month_year: { userId: user.id, month, year },
+      },
+      update: {
+        exercisesDone: { increment: 1 },
+        totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
+        readingAvg: realAverage,
+      },
+      create: {
+        userId: user.id,
+        month,
+        year,
+        readingAvg: realAverage,
+        exercisesDone: 1,
+        totalStudyTime: Math.round(validatedData.timeSpent / 60),
+      },
+    });
+
+    // Update User Streak & Stats
+    const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        lastStudyDate: new Date(),
+        lastStudyDate: now,
         totalStudyTime: {
-          increment: Math.floor(validatedData.timeSpent / 60),
+          increment: Math.round(validatedData.timeSpent / 60),
         },
+        currentStreak: newStreak,
+        longestStreak: Math.max(newStreak, user.longestStreak || 0),
       },
     });
 

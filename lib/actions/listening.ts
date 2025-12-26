@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateBandScore } from "../utils";
+import { calculateBandScore, calculateNewStreak } from "../utils";
 import { revalidatePath } from "next/cache";
 
 /***** Get listening exercises, fetch all with questions *****/
@@ -178,14 +178,56 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       },
     });
 
-    //   10. Update user stats
+    //   10. Update user stats & analytics
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0);
+
+    // Recalculate monthly average for Listening
+    const monthlyStats = await prisma.listeningAttempt.aggregate({
+      where: {
+        userId: user.id,
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+      },
+      _avg: { score: true },
+    });
+
+    const realAverage = monthlyStats._avg.score || bandScore;
+
+    // Update Analytics
+    await prisma.userAnalytics.upsert({
+      where: {
+        userId_month_year: { userId: user.id, month, year },
+      },
+      update: {
+        exercisesDone: { increment: 1 },
+        totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
+        listeningAvg: realAverage,
+      },
+      create: {
+        userId: user.id,
+        month,
+        year,
+        listeningAvg: realAverage,
+        exercisesDone: 1,
+        totalStudyTime: Math.round(validatedData.timeSpent / 60),
+      },
+    });
+
+    // Update User Streak & Stats
+    const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        lastStudyDate: new Date(),
+        lastStudyDate: now,
         totalStudyTime: {
-          increment: Math.floor(validatedData.timeSpent / 60),
+          increment: Math.round(validatedData.timeSpent / 60),
         },
+        currentStreak: newStreak,
+        longestStreak: Math.max(newStreak, user.longestStreak || 0),
       },
     });
 
