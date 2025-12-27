@@ -262,7 +262,8 @@ export async function getReadingAttempt(attemptId: string) {
   if (!user) {
     throw new Error("User not found");
   }
-
+  // Validate attemptID format
+  if (!attemptId || typeof attemptId !== "string") throw new Error("Invalid attempt ID");
   // 2. Fetch attempt
   const attempt = await prisma.readingAttempt.findUnique({
     where: {

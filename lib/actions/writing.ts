@@ -4,7 +4,7 @@ import prisma from "../prisma";
 import { generateAIFeedback } from "../geminiAi";
 import { revalidatePath } from "next/cache";
 import { SubmitWritingInput, submitWritingSchema } from "../validation";
-import { ZodError } from "zod";
+import { success, ZodError } from "zod";
 import { calculateNewStreak } from "../utils";
 
 export async function getWritingTasks(filters?: { taskType?: string; category?: string }) {
@@ -84,7 +84,7 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   const feedback = await generateAIFeedback(task.taskType, task.prompt, wordCount, content);
   const result = await prisma.writingAttempt.create({
     data: {
-      userId,
+      userId: user.id,
       taskId,
       content,
       wordCount,
@@ -152,4 +152,24 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   revalidatePath("/writing");
 
   return { success: true, data: result };
+}
+
+export async function getWritingAttempt(attemptId: string) {
+  // Authenticate user session
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  if (!user) throw new Error("User not found");
+  // Validate attemptId format
+  if (!attemptId || typeof attemptId !== "string") throw new Error("Invalid attempt ID");
+
+  const attempt = await prisma.writingAttempt.findUnique({
+    where: { id: attemptId, userId: user.id },
+    include: {
+      task: true,
+    },
+  });
+  if (!attempt) return { success: false, error: "Attempt not found" };
+  if (attempt.userId !== user.id) return { success: false, error: "Unauthorized" };
+  return { success: true, data: attempt };
 }

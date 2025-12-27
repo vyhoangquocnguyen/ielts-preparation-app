@@ -11,7 +11,7 @@ export async function generateAIFeedback(
   content: string
 ): Promise<WritingFeedbackDetailed> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const systemPrompt = `You are an expert IELTS Writing examiner. Evaluate the following ${
       taskType === "task1" ? "Task 1" : "Task 2"

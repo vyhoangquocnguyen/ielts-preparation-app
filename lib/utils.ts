@@ -91,7 +91,8 @@ export function getDifficultyColor(difficulty: string) {
 // Format time
 export function formatTime(seconds: number) {
   const totalSeconds = Math.floor(seconds);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const remainingSeconds = totalSeconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${hours}:${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }

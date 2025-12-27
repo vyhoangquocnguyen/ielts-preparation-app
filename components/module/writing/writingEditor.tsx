@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {  PencilSquareIcon, CheckIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, CheckIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -52,14 +52,12 @@ export default function WritingEditor({ task }: WritingEditorProps) {
   // --- HANDLERS ---
 
   const handleSubmit = useCallback(async () => {
-    if (wordCount < (task.minWords || 150)) {
-      throw new Error(
-        `Your word count (${wordCount}) is below the minimum required (${task.minWords}). Do you still want to submit?`
-      );
-      return;
-    }
+    // if (wordCount < (task.minWords || 150)) {
+    //   toast.error(`Your word count (${wordCount}) is below the minimum required (${task.minWords}).`);
+    //   return;
+    // }
     if (!content.trim()) {
-      throw new Error("Please write something before submitting.");
+      toast.error("Please write something before submitting.");
       return;
     }
     setIsSubmitting(true);
@@ -148,7 +146,13 @@ export default function WritingEditor({ task }: WritingEditorProps) {
             <CardContent className="p-6 space-y-6">
               {task.imgUrl && (
                 <div className="rounded-xl overflow-hidden border border-white/10">
-                  <Image src={task.imgUrl} width={500} height={500} alt="Writing Task visual aid" className="w-full h-auto object-cover" />
+                  <Image
+                    src={task.imgUrl}
+                    width={500}
+                    height={500}
+                    alt="Writing Task visual aid"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
               )}
               <div className="prose prose-invert max-w-none">
