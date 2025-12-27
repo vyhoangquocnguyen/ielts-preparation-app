@@ -10,9 +10,9 @@ export const metadata = {
   description: "Practice IELTS listening with authentic materials",
 };
 const ListeningPage = async ({ filter }: { filter?: { difficulty?: string; category?: string } }) => {
-  const exercises = await getListeningExercises(filter);
+  const { success, data: exercises } = await getListeningExercises(filter);
 
-  if (!exercises) {
+  if (!success || !exercises) {
     return (
       <div className="container flex flex-col gap-y-2 justify-center items-center mx-auto px-4 py-8">
         <div className="text-center">

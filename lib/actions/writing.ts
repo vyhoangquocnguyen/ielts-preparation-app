@@ -40,7 +40,7 @@ export async function getWritingTasks(filters?: { taskType?: string; category?: 
       order: "asc",
     },
   });
-  return tasks;
+  return {success: true, data: tasks};
 }
 
 export async function getWritingTaskById(taskId: string) {

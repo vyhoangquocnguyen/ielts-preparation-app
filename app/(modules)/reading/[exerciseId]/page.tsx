@@ -1,17 +1,20 @@
 import { ExerciseLayout } from "@/components/module/exerciseLayout";
 import { getReadingExerciseById } from "@/lib/actions/reading";
-import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import React from "react";
 
 export async function generateMetadata({ params }: { params: { exerciseId: string } }) {
   const { exerciseId } = await params;
   try {
-    const exercise = await getReadingExerciseById(exerciseId);
+    const { success, data: exercise } = await getReadingExerciseById(exerciseId);
+
+    if (!success || !exercise) {
+      return { title: "Exercise Not Found" };
+    }
 
     return {
-      title: `${exercise?.title} - IELTS Reading Practice`,
-      description: `Practice IELTS Reading: ${exercise?.description}`,
+      title: `${exercise.title} - IELTS Reading Practice`,
+      description: `Practice IELTS Reading: ${exercise.description}`,
     };
   } catch {
     return {
@@ -24,15 +27,10 @@ const ExercisePage = async ({ params }: { params: Promise<{ exerciseId: string }
   // Extract ExerciseId from params
   const { exerciseId } = await params;
   // Fetch exercise by id
-  let exercise;
-  try {
-    exercise = await getReadingExerciseById(exerciseId);
-  } catch (error) {
-    notFound();
-  }
+  const { success, data: exercise } = await getReadingExerciseById(exerciseId);
 
   // Error handling
-  if (!exercise || !exercise.questions || exercise.questions.length === 0) {
+  if (!success || !exercise || !exercise.questions || exercise.questions.length === 0) {
     notFound();
   }
 

@@ -34,21 +34,26 @@ export async function getReadingExercises(filter?: { difficulty?: string; catego
     difficulty: filter?.difficulty,
     category: filter?.category,
   };
-  // 3.Fetch from database
-  const exercises = await prisma.readingExercise.findMany({
-    where,
-    include: {
-      _count: {
-        select: {
-          questions: true,
+  try {
+    // 3.Fetch from database
+    const exercises = await prisma.readingExercise.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            questions: true,
+          },
         },
       },
-    },
-    orderBy: {
-      order: "asc",
-    },
-  });
-  return exercises;
+      orderBy: {
+        order: "asc",
+      },
+    });
+    return { success: true, data: exercises };
+  } catch (error) {
+    console.error("Error fetching reading exercises:", error);
+    return { success: false, error: "Failed to fetch reading exercises" };
+  }
 }
 
 // Fetch single exercise with questions
@@ -62,35 +67,37 @@ export async function getReadingExerciseById(exerciseId: string) {
   if (!exerciseId || typeof exerciseId !== "string") {
     throw new Error("Invalid exercise ID");
   }
-  // 2. Fetch the exercise
-  const exercise = await prisma.readingExercise.findUnique({
-    where: {
-      id: exerciseId,
-    },
-    // Include questions in the response
-    include: {
-      questions: {
-        orderBy: {
-          questionNumber: "asc",
+  try {
+    // 2. Fetch the exercise
+    const exercise = await prisma.readingExercise.findUnique({
+      where: {
+        id: exerciseId,
+      },
+      // Include questions in the response
+      include: {
+        questions: {
+          orderBy: {
+            questionNumber: "asc",
+          },
         },
       },
-    },
-  });
-  // handle not found
-  if (!exercise) {
-    throw new Error("Exercise not found");
+    });
+    // handle not found
+    if (!exercise) {
+      return { success: false, error: "Exercise not found" };
+    }
+    return { success: true, data: exercise };
+  } catch (error) {
+    console.error("Error fetching reading exercise:", error);
+    return { success: false, error: "Failed to fetch reading exercise" };
   }
-  return exercise;
 }
 
 // Submit and score answers
 export async function submitReadingAnswers(data: SubmitReadingInput) {
   try {
-    console.log("📝 submitReadingAnswers called with:", JSON.stringify(data, null, 2));
-
     // 1. Get user id
     const { userId } = await auth();
-    console.log("🔐 Auth userId:", userId);
     if (!userId) {
       throw new Error("Unauthorized");
     }
@@ -232,58 +239,55 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
 
     // 7. Revalidate & return
     revalidatePath("/dashboard");
-    console.log("✅ Success! Returning attempt ID:", attempt.id);
-    return attempt.id;
+    return { success: true, data: attempt.id };
   } catch (error) {
-    console.error("💥 ERROR in submitReadingAnswers:");
-    console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
-    console.error("Error message:", error instanceof Error ? error.message : String(error));
-    console.error("Full error:", error);
-    if (error instanceof Error && error.stack) {
-      console.error("Stack trace:", error.stack);
-    }
-    throw error; // Re-throw to let Next.js handle it
+    console.error("Error in submitReadingAnswers:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to submit answers" };
   }
 }
 
 // Get Attempt for review
 export async function getReadingAttempt(attemptId: string) {
-  // 1. Authenticated user
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  try {
+    // 1. Authenticated user
+    const { userId } = await auth();
+    if (!userId) return { success: false, error: "Unauthorized" };
 
-  const user = await prisma.user.findUnique({
-    where: {
-      clerkId: userId,
-    },
-  });
-  if (!user) {
-    throw new Error("User not found");
-  }
-  // Validate attemptID format
-  if (!attemptId || typeof attemptId !== "string") throw new Error("Invalid attempt ID");
-  // 2. Fetch attempt
-  const attempt = await prisma.readingAttempt.findUnique({
-    where: {
-      id: attemptId,
-      userId: user.id,
-    },
-    include: {
-      exercise: {
-        include: {
-          questions: {
-            orderBy: {
-              questionNumber: "asc",
+    const user = await prisma.user.findUnique({
+      where: {
+        clerkId: userId,
+      },
+    });
+    if (!user) return { success: false, error: "User not found" };
+
+    // Validate attemptID format
+    if (!attemptId || typeof attemptId !== "string") return { success: false, error: "Invalid attempt ID" };
+
+    // 2. Fetch attempt
+    const attempt = await prisma.readingAttempt.findUnique({
+      where: {
+        id: attemptId,
+        userId: user.id,
+      },
+      include: {
+        exercise: {
+          include: {
+            questions: {
+              orderBy: {
+                questionNumber: "asc",
+              },
             },
           },
         },
       },
-    },
-  });
-  if (!attempt) {
-    throw new Error("Attempt not found");
+    });
+
+    if (!attempt) return { success: false, error: "Attempt not found" };
+    if (!attempt.exercise) return { success: false, error: "Associated exercise not found" };
+
+    return { success: true, data: attempt };
+  } catch (error) {
+    console.error("Error fetching reading attempt:", error);
+    return { success: false, error: "Failed to fetch attempt" };
   }
-  return attempt;
 }

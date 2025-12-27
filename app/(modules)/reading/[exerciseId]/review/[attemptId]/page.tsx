@@ -13,7 +13,10 @@ type Props = {
 export async function generateMetadata({ params }: { params: Promise<{ attemptId: string }> }) {
   try {
     const { attemptId } = await params;
-    const attempt = await getReadingAttempt(attemptId);
+    const { success, data: attempt } = await getReadingAttempt(attemptId);
+    if (!success || !attempt) {
+      return { title: "Review - IELTS Reading" };
+    }
     const { exercise, score } = attempt;
     return {
       title: `Review: ${exercise.title} - Score ${score.toFixed(1)}`,
@@ -28,14 +31,14 @@ export async function generateMetadata({ params }: { params: Promise<{ attemptId
 
 async function ReviewPage({ params }: Props) {
   const { exerciseId, attemptId } = await params;
-  const attempt = (await getReadingAttempt(attemptId)) as ReadingAttemptWithExercise;
+  const { success, data: attempt } = await getReadingAttempt(attemptId);
 
   // Verify attempt exists and exercise ID matches
-  if (!attempt || attempt.exercise.id !== exerciseId) {
+  if (!success || !attempt || attempt.exercise.id !== exerciseId) {
     redirect(`/reading`);
   }
 
-  return <ReviewLayout attempt={attempt} moduleType="reading" />;
+  return <ReviewLayout attempt={attempt as ReadingAttemptWithExercise} moduleType="reading" />;
 }
 
 export default ReviewPage;

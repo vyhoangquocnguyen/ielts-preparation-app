@@ -10,19 +10,33 @@ type Props = {
   }>;
 };
 
-export const metadata = {
-  title: "Listening Review",
-  description: "Review your listening answers",
-};
+export async function generateMetadata({ params }: { params: Promise<{ attemptId: string }> }) {
+  try {
+    const { attemptId } = await params;
+    const { success, data: attempt } = await getListeningAttempt(attemptId);
+    if (!success || !attempt) {
+      return { title: "Review - IELTS Listening" };
+    }
+    const { exercise, score } = attempt;
+    return {
+      title: `Review: ${exercise.title} - Score ${score.toFixed(1)}`,
+      description: `Your scored ${score.toFixed(1)} on ${exercise.title}`,
+    };
+  } catch {
+    return {
+      title: "Review - IELTS Listening",
+    };
+  }
+}
 
 export default async function ListeningReviewPage({ params }: Props) {
   const { exerciseId, attemptId } = await params;
-  const attempt = (await getListeningAttempt(attemptId)) as ListeningAttemptWithExercise;
+  const { success, data: attempt } = await getListeningAttempt(attemptId);
 
   // Verify attempt exists and exercise ID matches
-  if (!attempt || attempt.exercise.id !== exerciseId) {
+  if (!success || !attempt || attempt.exercise.id !== exerciseId) {
     redirect(`/listening`);
   }
 
-  return <ReviewLayout attempt={attempt} moduleType="listening" />;
+  return <ReviewLayout attempt={attempt as ListeningAttemptWithExercise} moduleType="listening" />;
 }

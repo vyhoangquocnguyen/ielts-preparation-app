@@ -44,16 +44,18 @@ export async function getListeningExercises(filter?: { difficulty?: string; cate
         difficulty: true,
         category: true,
         duration: true,
+        isPublished: true,
+        order: true,
         _count: {
           select: { questions: true },
         },
       },
       orderBy: { order: "asc" },
     });
-    return exercises;
+    return { success: true, data: exercises };
   } catch (error) {
     console.error("Error fetching exercises:", error);
-    throw new Error("Failed to fetch exercises");
+    return { success: false, error: "Failed to fetch exercises" };
   }
 }
 
@@ -84,10 +86,10 @@ export async function getListeningExerciseById(exerciseId: string) {
       throw new Error("Exercise not found");
     }
     // 5. Return exercise
-    return exercise;
+    return { success: true, data: exercise };
   } catch (error) {
     console.error("Error fetching exercise:", error);
-    throw new Error("Failed to fetch exercise");
+    return { success: false, error: "Failed to fetch exercise" };
   }
 }
 
@@ -233,10 +235,10 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
 
     //   11. Revalidate & return
     revalidatePath("/dashboard");
-    return attempt.id;
+    return { success: true, data: attempt.id };
   } catch (error) {
     console.error("Error submitting answers:", error);
-    throw new Error("Failed to submit answers");
+    return { success: false, error: error instanceof Error ? error.message : "Failed to submit answers" };
   }
 }
 
@@ -245,19 +247,18 @@ export async function getListeningAttempt(attemptId: string) {
   try {
     // 1. Authenticate user
     const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    if (!userId) return { success: false, error: "Unauthorized" };
+
     const user = await prisma.user.findUnique({
       where: {
         clerkId: userId,
       },
     });
-    if (!user) {
-      throw new Error("User not found");
-    }
+    if (!user) return { success: false, error: "User not found" };
+
     // 2. Validate id
-    if (!attemptId || typeof attemptId !== "string") {
-      throw new Error("Invalid attempt ID");
-    }
+    if (!attemptId || typeof attemptId !== "string") return { success: false, error: "Invalid attempt ID" };
+
     // 3. Fetch attempt
     const attempt = await prisma.listeningAttempt.findUnique({
       where: { id: attemptId, userId: user.id },
@@ -273,14 +274,15 @@ export async function getListeningAttempt(attemptId: string) {
         },
       },
     });
+
     // 4. Handle not found
-    if (!attempt) {
-      throw new Error("Attempt not found");
-    }
+    if (!attempt) return { success: false, error: "Attempt not found" };
+    if (!attempt.exercise) return { success: false, error: "Associated exercise not found" };
+
     // 5. Return attempt
-    return attempt;
+    return { success: true, data: attempt };
   } catch (error) {
     console.error("Error fetching attempt:", error);
-    throw new Error("Failed to fetch attempt");
+    return { success: false, error: "Failed to fetch attempt" };
   }
 }

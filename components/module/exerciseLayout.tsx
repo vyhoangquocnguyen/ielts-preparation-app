@@ -63,13 +63,19 @@ export function ExerciseLayout({ exercise }: { exercise: Exercise }) {
         answer: answers[q.id] || "",
       }));
 
-      const attemptId = await submitReadingAnswers({
+      const result = await submitReadingAnswers({
         exerciseId: exercise.id,
         answers: answerArray,
         timeSpent,
       });
-      toast.success("Exercise submitted! Checking your answers...");
-      router.push(`/reading/${exercise.id}/review/${attemptId}`);
+
+      if (result.success && result.data) {
+        toast.success("Exercise submitted! Checking your answers...");
+        router.push(`/reading/${exercise.id}/review/${result.data}`);
+      } else {
+        toast.error(result.error || "Failed to submit answers. Please try again.");
+        setIsSubmitting(false);
+      }
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);

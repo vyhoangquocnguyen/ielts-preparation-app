@@ -1,15 +1,14 @@
-'use client'
+"use client";
 
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
-
 
 interface TranscriptViewerProps {
   transcript: string;
 }
 
 export function TranscriptViewer({ transcript }: TranscriptViewerProps) {
-const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const parsedTranscript = transcript.split("\n\n").filter((p) => p.trim());
 
   return (
@@ -20,7 +19,7 @@ const [isExpanded, setIsExpanded] = useState(false);
       </div>
 
       <div className="prose dark:prose-invert max-w-none">
-        {parsedTranscript.map((p, i) => (
+        {parsedTranscript.slice(0, isExpanded ? parsedTranscript.length : 2).map((p, i) => (
           <p key={i} className="mb-4 text-muted-foreground">
             {p}
           </p>
@@ -29,12 +28,10 @@ const [isExpanded, setIsExpanded] = useState(false);
       {parsedTranscript.length > 2 && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-sm text-blue-500 dark:text-blue-400 hover:underline"
-        >
+          className="text-sm text-blue-500 dark:text-blue-400 hover:underline">
           {isExpanded ? "Show Less" : "Show More"}
         </button>
       )}
-      
     </div>
   );
 }

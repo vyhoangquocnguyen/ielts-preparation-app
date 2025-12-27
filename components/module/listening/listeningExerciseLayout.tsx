@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function ListeningExerciseLayout({ exercise }: Props) {
-  const { id, title, description,questions, audioUrl } = exercise;
+  const { id, title, description, questions, audioUrl } = exercise;
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
@@ -86,6 +86,9 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
         exerciseId: id,
         answers: answerArray,
         timeSpent,
+      }).then((result) => {
+        if (!result.success) throw new Error(result.error);
+        return result.data;
       }),
       {
         loading: "Submitting your answers...",
@@ -174,7 +177,7 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
                 )}
               </Button>
               <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                Make sure you've answered all questions before submitting
+                Make sure you&apos;ve answered all questions before submitting
               </p>
             </div>
           </CardContent>

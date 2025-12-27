@@ -6,7 +6,19 @@ import FilterableExerciseList from "@/components/module/filterExerciseList";
 import { Suspense } from "react";
 
 const ReadingPracticePage = async () => {
-  const exercises = await getReadingExercises();
+  const { success, data: exercises } = await getReadingExercises();
+
+  if (!success || !exercises) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <h1 className="text-2xl font-bold">Failed to load exercises</h1>
+        <p className="text-muted-foreground">Please try again later.</p>
+        <Link href="/dashboard" className="mt-4">
+          <Button variant="outline">Back to Dashboard</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">

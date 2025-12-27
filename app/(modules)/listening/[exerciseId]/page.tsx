@@ -6,7 +6,10 @@ import { Suspense } from "react";
 export async function generateMetadata({ params }: { params: { exerciseId: string } }) {
   const { exerciseId } = await params;
   try {
-    const exercise = await getListeningExerciseById(exerciseId);
+    const { success, data: exercise } = await getListeningExerciseById(exerciseId);
+    if (!success || !exercise) {
+      return { title: "Exercise not found" };
+    }
     return {
       title: `${exercise.title} | IELTS Prep - Listening Practice`,
       description: exercise.description || "Practice IELTS listening with authentic materials",
@@ -21,15 +24,9 @@ export async function generateMetadata({ params }: { params: { exerciseId: strin
 
 const ListeningExercisePage = async ({ params }: { params: { exerciseId: string } }) => {
   const { exerciseId } = await params;
-  let exercise;
-  try {
-    exercise = await getListeningExerciseById(exerciseId);
-  } catch (error) {
-    console.error("Error fetching exercise:", error);
-    notFound();
-  }
+  const { success, data: exercise } = await getListeningExerciseById(exerciseId);
 
-  if (!exercise || !exercise.questions || exercise.questions.length === 0) {
+  if (!success || !exercise || !exercise.questions || exercise.questions.length === 0) {
     notFound();
   }
 
