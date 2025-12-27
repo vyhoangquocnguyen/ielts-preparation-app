@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ attemptId
     const { exercise, score } = attempt;
     return {
       title: `Review: ${exercise.title} - Score ${score.toFixed(1)}`,
-      description: `Your scored ${score.toFixed(1)} on ${exercise.title}`,
+      description: `You scored ${score.toFixed(1)} on ${exercise.title}`,
     };
   } catch {
     return {

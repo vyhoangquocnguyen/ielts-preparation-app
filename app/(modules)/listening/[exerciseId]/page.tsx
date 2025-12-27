@@ -1,7 +1,6 @@
 import ListeningExerciseLayout from "@/components/module/listening/listeningExerciseLayout";
 import { getListeningExerciseById } from "@/lib/actions/listening";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 export async function generateMetadata({ params }: { params: { exerciseId: string } }) {
   const { exerciseId } = await params;
@@ -41,9 +40,7 @@ const ListeningExercisePage = async ({ params }: { params: { exerciseId: string 
           </div>
         </div>
       </div> */}
-      <Suspense fallback={<div>Loading...</div>}>
         <ListeningExerciseLayout exercise={exercise} />
-      </Suspense>
     </div>
   );
 };

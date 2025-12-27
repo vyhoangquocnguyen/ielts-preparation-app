@@ -5,8 +5,13 @@ import { getReadingExercises } from "@/lib/actions/reading";
 import FilterableExerciseList from "@/components/module/filterExerciseList";
 import { Suspense } from "react";
 
-const ReadingPracticePage = async () => {
-  const { success, data: exercises } = await getReadingExercises();
+const ReadingPracticePage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ difficulty?: string; category?: string }>;
+}) => {
+  const resolvedParams = await searchParams;
+  const { success, data: exercises } = await getReadingExercises(resolvedParams);
 
   if (!success || !exercises) {
     return (

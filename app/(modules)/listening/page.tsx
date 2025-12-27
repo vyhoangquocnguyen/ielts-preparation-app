@@ -9,8 +9,13 @@ export const metadata = {
   title: "Listening Exercise | IELTS Prep",
   description: "Practice IELTS listening with authentic materials",
 };
-const ListeningPage = async ({ filter }: { filter?: { difficulty?: string; category?: string } }) => {
-  const { success, data: exercises } = await getListeningExercises(filter);
+const ListeningPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ difficulty?: string; category?: string }>;
+}) => {
+  const resolvedParams = await searchParams;
+  const { success, data: exercises } = await getListeningExercises(resolvedParams);
 
   if (!success || !exercises) {
     return (

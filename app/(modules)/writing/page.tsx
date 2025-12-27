@@ -1,13 +1,16 @@
-import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Suspense } from "react";
 import FilterableExerciseList from "@/components/module/filterExerciseList";
 import { getWritingTasks } from "@/lib/actions/writing";
-import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
 
-export default async function WritingPracticePage() {
-  const { success, data: tasks } = await getWritingTasks();
+export default async function WritingPracticePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ difficulty?: string; category?: string }>;
+}) {
+  const resolvedParams = await searchParams;
+  const { success, data: tasks } = await getWritingTasks(resolvedParams);
   if (!success)
     return (
       <div className="flex items-center justify-center text-center">

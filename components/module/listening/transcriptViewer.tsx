@@ -28,6 +28,8 @@ export function TranscriptViewer({ transcript }: TranscriptViewerProps) {
       {parsedTranscript.length > 2 && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
+          type="button"
+          aria-expanded={isExpanded}
           className="text-sm text-blue-500 dark:text-blue-400 hover:underline">
           {isExpanded ? "Show Less" : "Show More"}
         </button>
