@@ -23,6 +23,7 @@ export const readingAnswerSchema = z.object({
   questionId: z.string().min(1, "Question ID is required"),
   answer: z.string().min(1, "Answer is required"),
 });
+
 export const submitReadingSchema = z.object({
   exerciseId: z.string().min(1, "Exercise ID is required"),
   answers: z.array(readingAnswerSchema).min(1, "At least one answer is required"),
@@ -54,6 +55,7 @@ export const submitListeningSchema = z.object({
   timeSpent: z.number().int().positive(),
 });
 
+// Speaking
 
 
 export type SubmitListeningInput = z.infer<typeof submitListeningSchema>;

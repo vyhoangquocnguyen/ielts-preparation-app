@@ -4,32 +4,45 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
 // Get speaking exercises, fetch all with questions
-export async function getSpeakingExercises(part?: string) {
+export async function getSpeakingExercises(filterParts?: string) {
   // 1. Authenticate user
   const { userId } = await auth();
   if (!userId) {
-    throw new Error("Unauthorized");
+    return { success: false, error: "Unauthorized" };
   }
   // 2. validate if part is provided
-  if (part) {
+  if (filterParts) {
     const validParts = ["part1", "part2", "part3"];
-    if (!validParts.includes(part)) {
-      throw new Error("Invalid part");
+    if (!validParts.includes(filterParts)) {
+      return { success: false, error: "Invalid part" };
     }
   }
 
   // 3. Fetch exercises
   const exercises = await prisma.speakingExercise.findMany({
     where: {
-      part: part,
       isPublished: true,
+      ...(filterParts && { part: filterParts }),
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      part: true,
+      topic: true,
+      cueCard: true,
+      prepTime: true,
+      speakingTime: true,
+      questions: true,
+      isPublished: true,
+      order: true,
     },
     orderBy: {
       order: "asc",
     },
   });
 
-  return exercises;
+  return { success: true, exercises };
 }
 
 // Get speaking exercise by id
@@ -51,8 +64,10 @@ export async function getSpeakingExerciseById(id: string) {
   });
   // 4. Handle not found
   if (!exercise) {
-    throw new Error("Exercise not found");
+    return { success: false, error: "Exercise not found" };
   }
   // 5. Return exercise
-  return exercise;
+  return { success: true, exercise };
 }
+
+// export async function submitSpeakingExercise(data: SubmitSpeakingInput) {

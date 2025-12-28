@@ -4,7 +4,7 @@ import prisma from "../prisma";
 import { generateAIFeedback } from "../geminiAi";
 import { revalidatePath } from "next/cache";
 import { SubmitWritingInput, submitWritingSchema } from "../validation";
-import { success, ZodError } from "zod";
+import { ZodError } from "zod";
 import { calculateNewStreak } from "../utils";
 
 export async function getWritingTasks(filters?: { taskType?: string; category?: string }) {
@@ -40,7 +40,7 @@ export async function getWritingTasks(filters?: { taskType?: string; category?: 
       order: "asc",
     },
   });
-  return {success: true, data: tasks};
+  return { success: true, data: tasks };
 }
 
 export async function getWritingTaskById(taskId: string) {
@@ -73,9 +73,9 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   } catch (error) {
     if (error instanceof ZodError) {
       const errorMessage = error.issues.map((e) => e.message).join(", ");
-      throw new Error(`Validation failed: ${errorMessage}`);
+      return { success: false, error: `Validation failed: ${errorMessage}` };
     }
-    throw new Error("Validation failed");
+    return { success: false, error: "Validation failed" };
   }
   const { taskId, content, wordCount, timeSpent } = validatedData;
   const task = await prisma.writingTask.findUnique({ where: { id: taskId } });
