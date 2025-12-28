@@ -1,13 +1,34 @@
-import React from "react";
 import { getSpeakingExercises } from "@/lib/actions/speaking";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeftIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import FilterableExerciseList from "@/components/module/filterExerciseList";
-import ExerciseCard from "@/components/module/exerciseCard";
 
-const SpeakingPracticePage = async () => {
-  const exercises = await getSpeakingExercises();
+export const metadata = {
+  title: "Speaking Practice | IELTS Prep",
+  description: "Practice IELTS speaking with authentic materials",
+};
+
+const SpeakingPracticePage = async ({ searchParams }: { searchParams: Promise<{ part?: string }> }) => {
+  const resolvedParams = await searchParams;
+  const { success, exercises } = await getSpeakingExercises(resolvedParams);
+
+  if (!success || !exercises) {
+    return (
+      <div className="container flex flex-col gap-y-2 justify-center items-center mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold ">Something went wrong</h1>
+          <p className="text-muted-foreground">Please check again later.</p>
+        </div>
+        <Link href="/dashboard" className="mt-4">
+          <Button variant="outline" className="gap-2 rounded-lg">
+            <ArrowLeftIcon className="h-4 w-4" />
+            Dashboard
+          </Button>
+        </Link>
+      </div>
+    );
+  }
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col gap-y-2 p-2">
@@ -25,24 +46,7 @@ const SpeakingPracticePage = async () => {
           </div>
         </div>
       </div>
-          {/* <FilterableExerciseList exercises={exercises} /> */}
-          {/* Exercises Cards */}
-          <div className="space-y-6">
-              {exercises.length === 0 ? (
-                  <div className="text-center py-12">
-                      <BookOpenIcon className="w-12 h-12 mx-auto text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold">No exercises found</h3>
-                      <p className="mt-1 text-sm text-gray-500">Try selecting a different difficulty level.</p>
-                  </div>
-              ) : (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                          {/* {exercises.map((exercise) => (
-                            //   <ExerciseCard key={exercise.id} exercise={exercise} />
-                      ))} */}
-                  </div>
-              )}
-              
-          </div>
+      <FilterableExerciseList exercises={exercises} moduleType="speaking" />
     </div>
   );
 };

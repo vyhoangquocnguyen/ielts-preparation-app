@@ -50,7 +50,10 @@ const ListeningPage = async ({
           </div>
         </div>
 
-        <Suspense fallback={<p>Loading...</p>}>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center text-center text-muted-foreground">Loading...</div>
+          }>
           <FilterableExerciseList exercises={exercises} moduleType="listening" />
         </Suspense>
       </div>

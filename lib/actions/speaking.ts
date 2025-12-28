@@ -4,16 +4,16 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
 // Get speaking exercises, fetch all with questions
-export async function getSpeakingExercises(filterParts?: string) {
+export async function getSpeakingExercises(filter?: { part?: string }) {
   // 1. Authenticate user
   const { userId } = await auth();
   if (!userId) {
     return { success: false, error: "Unauthorized" };
   }
   // 2. validate if part is provided
-  if (filterParts) {
+  if (filter?.part) {
     const validParts = ["part1", "part2", "part3"];
-    if (!validParts.includes(filterParts)) {
+    if (!validParts.includes(filter.part)) {
       return { success: false, error: "Invalid part" };
     }
   }
@@ -22,7 +22,7 @@ export async function getSpeakingExercises(filterParts?: string) {
   const exercises = await prisma.speakingExercise.findMany({
     where: {
       isPublished: true,
-      ...(filterParts && { part: filterParts }),
+      ...(filter?.part && { part: filter.part }),
     },
     select: {
       id: true,
