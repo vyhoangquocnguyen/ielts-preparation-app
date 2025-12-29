@@ -5,7 +5,8 @@ import prisma from "@/lib/prisma";
 import { SubmitSpeakingInput } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
-
+import { generateSpeakingAIFeedback } from "../geminiAi";
+import { transcribeAudio } from "../utils";
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -79,7 +80,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   data: {
     error?: string;
     attemptId?: string;
-  }
+  };
 }> {
   // 1. Authenticate user
   const { userId } = await auth();
@@ -122,15 +123,36 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   });
 
   console.log("Audio uploaded to storage:", blob.url);
+  /*** TRANSCRIPT AUDIO ***/
+  /*** TODO: IMPLEMENT ACTUAL TRANSCRIPTION - (maybe OpenAI Whisper API ?) ***/
+  const transcript = await transcribeAudio(blob.url);
 
-  /*** TODO: GENERATE AI FEEDBACK ***/
+  /*** GENERATE AI FEEDBACK ***/
+  const feedback = await generateSpeakingAIFeedback(
+    exercise.part,
+    exercise.questions as string[],
+    transcript,
+    data.duration
+  );
 
   /*** TODO: SAVE TO DB ***/
+  const attempt = await prisma.speakingAttempt.create({
+    data: {
+      userId: user.id,
+      exerciseId: exercise.id,
+      audioUrl: blob.url,
+      transcript,
+      overallScore: feedback.overallScore,
+      feedback: feedback, // TODO: fix this to type SpeakingFeedbackDetailed, now it is "any"
+      completed: true,
+      audioDuration: data.duration,
+    },
+  });
   /*** TODO: UPDATE USER ANALYTICS ***/
   /*** TODO: UPDATE USER PROGRESS ***/
   /*** REVALIDATE CACHE ***/
   revalidatePath("/speaking");
-  revalidatePath("/dashboard")
+  revalidatePath("/dashboard");
 
   // 5. Return result
   return { success: true, data: { attemptId: "attemptStringHere" } };

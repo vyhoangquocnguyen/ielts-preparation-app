@@ -1,6 +1,34 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+
+export async function transcribeAudio(audioUrl: string): Promise<string> {
+  try {
+    // DEVELOPMENT VERSION (Mock)
+    console.log("Mock transcribing audio:", audioUrl);
+    return "This is a mock transcription. In production, this would be the actual speech-to-text result from Deepgram API.";
+
+    // PRODUCTION VERSION (Uncomment when ready)
+    /*
+    const response = await fetch('https://api.deepgram.com/v1/listen', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: audioUrl })
+    })
+    
+    const data = await response.json()
+    return data.results.channels[0].alternatives[0].transcript
+    */
+  } catch (error) {
+    console.error("Error transcribing audio:", error);
+    return "Transcription unavailable";
+  }
+}
+
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

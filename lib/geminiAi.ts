@@ -97,10 +97,90 @@ export async function generateSpeakingAIFeedback(
   questions: string[],
   transcript: string,
   duration: number
-): Promise<SpeakingFeedbackDetailed> {
+)//: Promise<SpeakingFeedbackDetailed>
+{
   try {
-  
-}catch(error){
-  console.error("Error generating AI feedback:", error);
-  return 
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+    const systemPrompt = `You are an expert IELTS Speaking examiner. Evaluate the following Speaking ${
+      part === "part1" ? "Part 1" : part === "part2" ? "Part 2" : "Part 3"
+    } response.
+
+        Questions: ${questions.join(", ")}
+
+        Transcript (${duration} seconds):
+        ${transcript}
+
+        Provide detailed feedback in the following JSON format:
+        {
+          "overallScore": <number between 0-9 in 0.5 increments>,
+          "fluencyCoherence": {
+            "score": <number 0-9>,
+            "comments": "<detailed comments>",
+            "suggestions": ["<suggestion 1>", "<suggestion 2>"]
+          },
+          "lexicalResource": {
+            "score": <number 0-9>,
+            "comments": "<detailed comments>",
+            "suggestions": ["<suggestion 1>", "<suggestion 2>"]
+          },
+          "grammaticalAccuracy": {
+            "score": <number 0-9>,
+            "comments": "<detailed comments>",
+            "errors": ["<error 1>", "<error 2>"]
+          },
+          "pronunciation": {
+            "score": <number 0-9>,
+            "comments": "<detailed comments>",
+            "issues": ["<issue 1>", "<issue 2>"]
+          },
+          "improvements": ["<key improvement 1>", "<key improvement 2>", "<key improvement 3>"],
+          "strengths": ["<strength 1>", "<strength 2>"]
+        }
+
+        Be constructive, specific, and provide actionable feedback. Consider:
+        - Natural speech patterns and hesitations
+        - Vocabulary range and appropriacy
+        - Grammar accuracy and complexity
+        - Pronunciation clarity (based on transcript quality)
+        - Fluency and coherence of ideas`;
+
+    // Call Gemini API
+    const result = await model.generateContent(systemPrompt);
+    const text = result.response.text();
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonText = text;
+    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1];
+    }
+    // Parse JSON
+    const feedback = JSON.parse(jsonText);
+    return feedback // as SpeakingFeedbackDetailed;
+  } catch (error) {
+    console.error("Error generating AI feedback:", error);
+  }
+  return {
+    overallScore: 0,
+    fluencyCoherence: {
+      score: 0,
+      comments: "Unable to generate detailed feedback at this time",
+      suggestions: ["Please try again later."],
+    },
+    lexicalResource: {
+      score: 0,
+      comments: "Unable to generate detailed feedback at this time",
+      suggestions: ["Please try again later."],
+    },
+    grammaticalAccuracy: {
+      score: 0,
+      comments: "Unable to generate detailed feedback at this time",
+      errors: ["Unable to generate detailed feedback at this time"],
+    },
+    pronunciation: {
+      score: 0,
+      comments: "Unable to generate detailed feedback at this time",
+    },
+    improvements: ["Unable to generate detailed feedback at this time"],
+  };
 }
