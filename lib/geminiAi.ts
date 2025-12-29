@@ -1,10 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { WritingFeedbackDetailed } from "@/types";
+import { SpeakingFeedbackDetailed, WritingFeedbackDetailed } from "@/types";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-export async function generateAIFeedback(
+// Generate writing feedback
+export async function generateWritingAIFeedback(
   taskType: string,
   prompt: string,
   wordCount: number,
@@ -88,4 +89,18 @@ Be constructive, specific, and provide actionable feedback. Focus on IELTS band 
       strengths: [],
     };
   }
+}
+
+// Generate speaking feedback
+export async function generateSpeakingAIFeedback(
+  part: string,
+  questions: string[],
+  transcript: string,
+  duration: number
+): Promise<SpeakingFeedbackDetailed> {
+  try {
+  
+}catch(error){
+  console.error("Error generating AI feedback:", error);
+  return 
 }

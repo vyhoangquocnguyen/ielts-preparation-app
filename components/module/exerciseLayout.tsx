@@ -91,9 +91,8 @@ export function ExerciseLayout({ exercise }: { exercise: Exercise }) {
       {/* Back Button + Timer Row */}
       <div className="flex items-center justify-between mb-6">
         <Link href="/reading">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2 rounded-md">
             <ArrowLeftIcon className="h-4 w-4" />
-            Back to List
           </Button>
         </Link>
         <Timer initialTime={3600} onTimeUpdate={setTimeSpent} onTimeUp={handleSubmit} />

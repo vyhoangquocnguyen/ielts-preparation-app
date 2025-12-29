@@ -56,9 +56,14 @@ export const submitListeningSchema = z.object({
 });
 
 // Speaking
-
+export const submitSpeakingSchema = z.object({
+  exerciseId: z.string().min(1, "Exercise ID is required"),
+  audioBlob: z.string().min(1, "Audio data is required"),
+  duration: z.number().int().positive(),
+});
 
 export type SubmitListeningInput = z.infer<typeof submitListeningSchema>;
 export type SubmitReadingInput = z.infer<typeof submitReadingSchema>;
 export type SubmitWritingInput = z.infer<typeof submitWritingSchema>;
+export type SubmitSpeakingInput = z.infer<typeof submitSpeakingSchema>;
 export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;

@@ -1,7 +1,7 @@
 "use server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "../prisma";
-import { generateAIFeedback } from "../geminiAi";
+import { generateWritingAIFeedback } from "../geminiAi";
 import { revalidatePath } from "next/cache";
 import { SubmitWritingInput, submitWritingSchema } from "../validation";
 import { ZodError } from "zod";
@@ -81,7 +81,7 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   const task = await prisma.writingTask.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
 
-  const feedback = await generateAIFeedback(task.taskType, task.prompt, wordCount, content);
+  const feedback = await generateWritingAIFeedback(task.taskType, task.prompt, wordCount, content);
   const result = await prisma.writingAttempt.create({
     data: {
       userId: user.id,

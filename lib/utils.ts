@@ -94,5 +94,6 @@ export function formatTime(seconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const remainingSeconds = totalSeconds % 60;
-  return `${hours}:${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+
+  return [hours, minutes, remainingSeconds].map((v) => v.toString().padStart(2, "0")).join(":");
 }

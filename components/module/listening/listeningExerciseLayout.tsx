@@ -115,9 +115,8 @@ export default function ListeningExerciseLayout({ exercise }: Props) {
       {/* Back Button + Timer Row */}
       <div className="flex items-center justify-between mb-6">
         <Link href="/listening">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2 rounded-md">
             <ArrowLeftIcon className="h-4 w-4" />
-            Back to List
           </Button>
         </Link>
         <Timer initialTime={2400} onTimeUpdate={setTimeSpent} onTimeUp={handleSubmit} />

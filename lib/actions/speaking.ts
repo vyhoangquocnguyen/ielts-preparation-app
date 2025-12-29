@@ -2,6 +2,10 @@
 
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { SubmitSpeakingInput } from "../validation";
+import { put } from "@vercel/blob";
+import { revalidatePath } from "next/cache";
+
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -70,4 +74,64 @@ export async function getSpeakingExerciseById(id: string) {
   return { success: true, exercise };
 }
 
-// export async function submitSpeakingExercise(data: SubmitSpeakingInput) {
+export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise<{
+  success: boolean;
+  data: {
+    error?: string;
+    attemptId?: string;
+  }
+}> {
+  // 1. Authenticate user
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  // 2. Validate id
+  if (!data.exerciseId || typeof data.exerciseId !== "string") {
+    throw new Error("Invalid exercise ID");
+  }
+  // 3. Fetch exercise
+  const exercise = await prisma.speakingExercise.findUnique({
+    where: {
+      id: data.exerciseId,
+    },
+  });
+  // 4. Handle not found
+  if (!exercise) {
+    return { success: false, error: "Exercise not found" };
+  }
+  /*** PROCESS AUDIO ***/
+  // 1. extract base64 data
+  const base64Data = data.audioBlob.split(",")[1];
+  // 2. convert base64 to buffer
+  const buffer = Buffer.from(base64Data, "base64");
+
+  // 3. Upload audio to storage
+  const filename = `speaking/${user.id}/${Date.now()}.webm`;
+  const blob = await put(filename, buffer, {
+    access: "public",
+    contentType: "audio/webm",
+  });
+
+  console.log("Audio uploaded to storage:", blob.url);
+
+  /*** TODO: GENERATE AI FEEDBACK ***/
+
+  /*** TODO: SAVE TO DB ***/
+  /*** TODO: UPDATE USER ANALYTICS ***/
+  /*** TODO: UPDATE USER PROGRESS ***/
+  /*** REVALIDATE CACHE ***/
+  revalidatePath("/speaking");
+  revalidatePath("/dashboard")
+
+  // 5. Return result
+  return { success: true, data: { attemptId: "attemptStringHere" } };
+}

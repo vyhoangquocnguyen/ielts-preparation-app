@@ -8,6 +8,7 @@ import {
   MicrophoneIcon,
   PlayCircleIcon,
   Square2StackIcon,
+  StopIcon,
 } from "@heroicons/react/24/outline";
 import { Activity, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -143,9 +144,8 @@ export default function AudioRecorder({ onRecordingComplete, maxDuration }: Prop
       {/* Recording Indicator */}
       <Activity mode={isRecording ? "visible" : "hidden"}>
         <div className="flex items-center justify-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-          <div className="w-3 h-3 bg-red-600 rounded-full animate-p">
-            <span className="text-red-600 dark:text-red-400 font-semibold">Recording in progress...</span>
-          </div>
+          <div className="w-3 h-3 bg-red-600 rounded-full animate-p" />
+          <span className="text-red-600 dark:text-red-400 font-semibold">Recording in progress...</span>
         </div>
       </Activity>
       {/* Timer Display */}
@@ -183,7 +183,7 @@ export default function AudioRecorder({ onRecordingComplete, maxDuration }: Prop
         )}
         {isRecording && (
           <Button onClick={stopRecording} size="lg" variant="destructive" className="min-w-[200px]">
-            <Square2StackIcon className="w-5 h-5 mr-2" />
+            <StopIcon className="w-5 h-5 mr-2" />
             Stop Recording
           </Button>
         )}
