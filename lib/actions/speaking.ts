@@ -135,6 +135,8 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     data.duration
   );
 
+  // TODO: validate feedback with zod
+
   /*** TODO: SAVE TO DB ***/
   const attempt = await prisma.speakingAttempt.create({
     data: {
