@@ -107,7 +107,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   });
   // 4. Handle not found
   if (!exercise) {
-    return { success: false, error: "Exercise not found" };
+    return { success: false, data: { error: "Exercise not found" } };
   }
   /*** PROCESS AUDIO ***/
   // 1. extract base64 data
@@ -135,8 +135,6 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     data.duration
   );
 
-  // TODO: validate feedback with zod
-
   /*** TODO: SAVE TO DB ***/
   const attempt = await prisma.speakingAttempt.create({
     data: {
@@ -145,7 +143,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
       audioUrl: blob.url,
       transcript,
       overallScore: feedback.overallScore,
-      feedback: feedback, // TODO: fix this to type SpeakingFeedbackDetailed, now it is "any"
+      feedback: feedback,
       completed: true,
       audioDuration: data.duration,
     },

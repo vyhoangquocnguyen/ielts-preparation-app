@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SpeakingFeedbackDetailed, WritingFeedbackDetailed } from "@/types";
+import { speakingAIFeedbackSchema, writingAIFeedbackSchema } from "./validation";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -60,7 +61,7 @@ Be constructive, specific, and provide actionable feedback. Focus on IELTS band 
       jsonText = jsonMatch[1];
     }
     const feedback = JSON.parse(jsonText);
-    return feedback as WritingFeedbackDetailed;
+    return writingAIFeedbackSchema.parse(feedback) as WritingFeedbackDetailed;
   } catch (error) {
     console.error("Error generating AI feedback:", error);
     return {
@@ -97,7 +98,7 @@ export async function generateSpeakingAIFeedback(
   questions: string[],
   transcript: string,
   duration: number
-)//: Promise<SpeakingFeedbackDetailed>
+): Promise<SpeakingFeedbackDetailed>
 {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
@@ -156,7 +157,7 @@ export async function generateSpeakingAIFeedback(
     }
     // Parse JSON
     const feedback = JSON.parse(jsonText);
-    return feedback // as SpeakingFeedbackDetailed;
+    return speakingAIFeedbackSchema.parse(feedback) as SpeakingFeedbackDetailed; //return with validation feedback
   } catch (error) {
     console.error("Error generating AI feedback:", error);
   }
@@ -182,5 +183,6 @@ export async function generateSpeakingAIFeedback(
       comments: "Unable to generate detailed feedback at this time",
     },
     improvements: ["Unable to generate detailed feedback at this time"],
+    strengths: ["Unable to generate detailed feedback at this time"],
   };
 }

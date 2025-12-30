@@ -62,6 +62,36 @@ export const submitSpeakingSchema = z.object({
   duration: z.number().int().positive(),
 });
 
+// AI feedback
+export const CriteriaFeedbackSchema = z.object({
+  score: z.number().min(0).max(9),
+  comments: z.string().min(1, "Comments are required"),
+  suggestions: z.array(z.string()).optional(),
+  errors: z.array(z.string()).optional(),
+  issues: z.array(z.string()).optional(),
+});
+export const speakingAIFeedbackSchema = z.object({
+  overallScore: z.number().min(0).max(9),
+  fluencyCoherence: CriteriaFeedbackSchema,
+  lexicalResource: CriteriaFeedbackSchema,
+  grammaticalAccuracy: CriteriaFeedbackSchema,
+  pronunciation: CriteriaFeedbackSchema,
+  improvements: z.array(z.string()).optional(),
+  strengths: z.array(z.string()).optional(),
+});
+export const writingAIFeedbackSchema = z.object({
+  overallScore: z.number().min(0).max(9),
+  taskAchievement: CriteriaFeedbackSchema,
+  coherenceCohesion: CriteriaFeedbackSchema,
+  lexicalResource: CriteriaFeedbackSchema,
+  grammaticalAccuracy: CriteriaFeedbackSchema,
+  improvements: z.array(z.string()).optional(),
+  strengths: z.array(z.string()).optional(),
+  rewrittenSample: z.string().optional(),
+});
+
+export type SpeakingAIFeedbackInput = z.infer<typeof speakingAIFeedbackSchema>;
+export type WritingAIFeedbackInput = z.infer<typeof writingAIFeedbackSchema>;
 export type SubmitListeningInput = z.infer<typeof submitListeningSchema>;
 export type SubmitReadingInput = z.infer<typeof submitReadingSchema>;
 export type SubmitWritingInput = z.infer<typeof submitWritingSchema>;

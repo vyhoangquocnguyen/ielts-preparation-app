@@ -89,7 +89,7 @@ export async function submitWritingTask(data: SubmitWritingInput) {
       content,
       wordCount,
       overallScore: feedback.overallScore,
-      feedback: JSON.stringify(feedback),
+      feedback: feedback,
       timeSpent,
       completed: true,
     },
