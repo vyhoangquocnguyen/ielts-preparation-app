@@ -32,6 +32,7 @@ export interface CriteriaFeedback {
   comments: string;
   suggestions?: string[];
   errors?: string[]; // Used for Grammatical Accuracy
+  issues?: string[]; // Used for Pronunciation
 }
 
 export interface WritingFeedbackDetailed {
@@ -52,6 +53,7 @@ export interface SpeakingFeedbackDetailed {
   grammaticalAccuracy: CriteriaFeedback;
   pronunciation: CriteriaFeedback;
   improvements: string[];
+  strengths: string[];
 }
 
 // --- PRISMA-LINKED TYPES (EXTENDED) ---

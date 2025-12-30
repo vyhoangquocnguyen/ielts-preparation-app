@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { SpeakingExercise } from "@/types";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
-import Timer from "../timer";
 import { submitSpeakingExercise } from "@/lib/actions/speaking";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowPathIcon, ExclamationCircleIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
