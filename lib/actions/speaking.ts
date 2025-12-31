@@ -6,7 +6,7 @@ import { SubmitSpeakingInput } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { generateSpeakingAIFeedback } from "../geminiAi";
-import { transcribeAudio } from "../utils";
+import { calculateNewStreak, transcribeAudio } from "../utils";
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -80,6 +80,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   data: {
     error?: string;
     attemptId?: string;
+    score?: number;
   };
 }> {
   // 1. Authenticate user
@@ -149,11 +150,100 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     },
   });
   /*** TODO: UPDATE USER ANALYTICS ***/
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const startOfMonth = new Date(year, month - 1, 1);
+  const endOfMonth = new Date(year, month, 0);
+  const monthlyStats = await prisma.speakingAttempt.aggregate({
+    where: {
+      userId: user.id,
+      createdAt: { gte: startOfMonth, lte: endOfMonth },
+    },
+    _avg: { overallScore: true },
+    _count: { id: true },
+  });
+  const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+
+  await prisma.userAnalytics.upsert({
+    where: {
+      userId_month_year: {
+        userId: user.id,
+        month,
+        year,
+      },
+    },
+    update: {
+      exercisesDone: { increment: 1 },
+      totalStudyTime: { increment: Math.round(data.duration / 60) },
+      speakingAvg: realAverage,
+    },
+    create: {
+      userId: user.id,
+      month,
+      year,
+      speakingAvg: realAverage,
+      exercisesDone: 1,
+      totalStudyTime: Math.round(data.duration / 60),
+    },
+  });
+
   /*** TODO: UPDATE USER PROGRESS ***/
+  const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      totalStudyTime: {
+        increment: Math.round(data.duration / 60),
+      },
+      lastStudyDate: now,
+      currentStreak: newStreak,
+      longestStreak: Math.max(newStreak, user.longestStreak || 0),
+    },
+  });
   /*** REVALIDATE CACHE ***/
   revalidatePath("/speaking");
   revalidatePath("/dashboard");
 
   // 5. Return result
-  return { success: true, data: { attemptId: "attemptStringHere" } };
+  return {
+    success: true,
+    data: {
+      attemptId: attempt.id,
+      score: feedback.overallScore,
+    },
+  };
+}
+
+// Get speaking attempt for feedback display
+export async function getSpeakingFeedback(attemptId: string) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+    const attempt = await prisma.speakingAttempt.findUnique({
+      where: {
+        id: attemptId,
+      },
+      include: {
+        exercise: true,
+      },
+    });
+    if (!attempt) {
+      return { success: false, error: "Attempt not found" };
+    }
+    if (attempt.userId !== user.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: true, attempt };
+  } catch (error) {
+    console.error("Error fetching attempt:", error);
+    return { success: false, error: "Internal server error, failed to fetch attempt" };
+  }
 }

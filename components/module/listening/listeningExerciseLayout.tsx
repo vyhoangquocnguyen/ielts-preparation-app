@@ -15,7 +15,7 @@ import { ListeningExerciseWithQuestions } from "@/types";
 import Timer from "../timer";
 import AudioPlayer from "@/components/module/listening/audioPlayer";
 import { Button } from "@/components/ui/button";
-import QuestionsPanel from "../reading/questionsPanel";
+import QuestionsPanel from "../questionsPanel";
 interface Props {
   exercise: ListeningExerciseWithQuestions;
 }

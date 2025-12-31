@@ -30,40 +30,15 @@ export interface AttemptSummary {
 
 // --- FEEDBACK INTERFACES ---
 
-// export interface CriteriaFeedback {
-//   score: number;
-//   comments: string;
-//   suggestions?: string[];
-//   errors?: string[]; // Used for Grammatical Accuracy
-//   issues?: string[]; // Used for Pronunciation
-// }
+
 export type CriteriaFeedback = z.infer<typeof CriteriaFeedbackSchema> & {
   [key: string]: Prisma.JsonValue | undefined;
 };
 
-// export interface WritingFeedbackDetailed {
-//   overallScore: number;
-//   taskAchievement: CriteriaFeedback;
-//   coherenceCohesion: CriteriaFeedback;
-//   lexicalResource: CriteriaFeedback;
-//   grammaticalAccuracy: CriteriaFeedback;
-//   improvements: string[];
-//   strengths: string[];
-//   rewrittenSample?: string;
-// }
 export type WritingFeedbackDetailed = z.infer<typeof writingAIFeedbackSchema> & {
   [key: string]: Prisma.JsonValue | undefined;
 };
 
-// export interface SpeakingFeedbackDetailed {
-//   overallScore: number;
-//   fluencyCoherence: CriteriaFeedback;
-//   lexicalResource: CriteriaFeedback;
-//   grammaticalAccuracy: CriteriaFeedback;
-//   pronunciation: CriteriaFeedback;
-//   improvements: string[];
-//   strengths: string[];
-// }
 export type SpeakingFeedbackDetailed = z.infer<typeof speakingAIFeedbackSchema> & {
   [key: string]: Prisma.JsonValue | undefined;
 };

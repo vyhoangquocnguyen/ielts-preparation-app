@@ -79,7 +79,7 @@ export default function WritingEditor({ task }: WritingEditorProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [wordCount, task.minWords, router, task.id, content, startTime]);
+  }, [wordCount, router, task.id, content, startTime]);
 
   const handleTimeUp = () => {
     if (!isSubmitting && content.trim()) {

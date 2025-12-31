@@ -28,7 +28,6 @@ export default function ReviewLayout({ attempt, moduleType }: ReviewLayoutProps)
       {/* Score Card */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
-          {" "}
           <CardTitle className="text-center">Your Result</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">

@@ -1,183 +1,204 @@
+import FeedbackDisplay from "@/components/module/shared/feedbackDisplay";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getScoreColor } from "@/lib/utils";
+import { getSpeakingFeedback } from "@/lib/actions/speaking";
+import { formatTime } from "@/lib/utils";
 import { SpeakingFeedbackDetailed } from "@/types";
 import {
-  ArrowTrendingUpIcon,
-  BookOpenIcon,
+  ArrowLeftCircleIcon,
   ChatBubbleLeftEllipsisIcon,
   CheckBadgeIcon,
-  CheckCircleIcon,
+  LightBulbIcon,
   MicrophoneIcon,
-  StarIcon,
+  PlayCircleIcon,
 } from "@heroicons/react/24/outline";
-interface Props {
-  feedback: SpeakingFeedbackDetailed;
-}
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
-export default function SpeakingFeedbackDisplay({ feedback }: Props) {
-  const { strengths, improvements, fluencyCoherence, lexicalResource, grammaticalAccuracy, pronunciation } = feedback;
+export const generateMetadata = async ({ params }: { params: { id: string; attemptId: string } }) => {
+  try {
+    const { attemptId } = await params;
+    const { attempt, success } = await getSpeakingFeedback(attemptId);
+    if (attempt !== undefined && success) {
+      return {
+        title: `Review: ${attempt.exercise.title} - Score ${attempt.overallScore?.toFixed(1)}`,
+        description: `Your scored ${attempt.overallScore?.toFixed(1)} on ${attempt.exercise.title}`,
+      };
+    }
+  } catch {
+    return {
+      title: "Review - IELTS Speaking",
+    };
+  }
+};
+
+export default async function SpeakingFeedBackPage({ params }: { params: Promise<{ id: string; attemptId: string }> }) {
+  const { attemptId } = await params;
+  const { attempt, success } = await getSpeakingFeedback(attemptId);
+
+  if (!success || !attempt) notFound();
+  const { exercise, feedback: rawFeedback } = attempt;
+  const feedback = rawFeedback as SpeakingFeedbackDetailed;
+  const {
+    strengths,
+    improvements,
+    fluencyCoherence,
+    lexicalResource,
+    grammaticalAccuracy,
+    pronunciation,
+    overallScore,
+  } = feedback;
+
   const criteria = [
     {
       title: "Fluency & Coherence",
       icon: ChatBubbleLeftEllipsisIcon,
-      data: fluencyCoherence,
+      score: fluencyCoherence.score,
+      comments: fluencyCoherence.comments,
+      suggestions: fluencyCoherence.suggestions,
       description: "Flow of speech and logical organization",
     },
     {
       title: "Lexical Resource",
-      icon: BookOpenIcon,
-      data: lexicalResource,
+      icon: LightBulbIcon,
+      score: lexicalResource.score,
+      comments: lexicalResource.comments,
+      suggestions: lexicalResource.suggestions,
       description: "Range and accuracy of vocabulary used",
     },
     {
       title: "Grammatical Range & Accuracy",
       icon: CheckBadgeIcon,
-      data: grammaticalAccuracy,
+      score: grammaticalAccuracy.score,
+      comments: grammaticalAccuracy.comments,
+      suggestions: grammaticalAccuracy.suggestions,
+      errors: grammaticalAccuracy.errors,
       description: "Variety and accuracy of grammar",
     },
     {
       title: "Pronunciation",
       icon: MicrophoneIcon,
-      data: pronunciation,
+      score: pronunciation.score,
+      comments: pronunciation.comments,
+      suggestions: pronunciation.suggestions,
+      issues: pronunciation.issues,
       description: "Clarity and natural rhythm",
     },
   ];
+
+  const tips = [
+    { icon: "🎤", text: "Record yourself regularly to track improvement over time" },
+    { icon: "👂", text: "Listen to native speakers and mimic their pronunciation" },
+    { icon: "📚", text: "Expand vocabulary by reading widely and noting new words" },
+    { icon: "🗣️", text: "Practice speaking on various topics for 2 minutes without stopping" },
+    { icon: "✍️", text: "Work on grammar through writing exercises and correction" },
+    { icon: "💬", text: "Join speaking groups or find language exchange partners" },
+  ];
   return (
-    <div className="space-y-6">
-      {/* Strength */}
-      {strengths && strengths.length > 0 && (
-        <Card className="border-green-200 dark:border-green-800">
+    <div className="min-h-screen py-8">
+      <div className="mx-auto px-4">
+        {/* Header */}
+        <div className="mb-6">
+          <Link href="/speaking" className="inline-flex items-center mb-4 text-blue-600 hover:text-blue-700">
+            <ArrowLeftCircleIcon className="w-6 h-6" />
+            Back to Speaking Exercises
+          </Link>
+          <h1 className="text-3xl font-bold mt-2">AI Feedback</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">{attempt.exercise.title}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Feedback</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            {exercise.title} • {exercise.part.replace("part", "Part ")}
+          </p>
+        </div>
+        {/* Overall Score */}
+        <Card className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-white dark:bg-gray-800 rounded-full shadow-lg mb-4">
+                <span className="text-4xl font-bold text-blue-600">{attempt.overallScore}</span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Overall Band Score</h2>
+              <div className="flex items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <span>⏱️</span>
+                  <span>{formatTime(attempt.audioDuration)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PlayCircleIcon className="w-4 h-4" />
+                  <span>Recording available below</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Audio Player & Transcript */}
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <StarIcon className="w-5 h-5" />
-              Strengths
-            </CardTitle>
+            <CardTitle>Your Recording</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Audio Player */}
+            <div>
+              <audio controls className="w-full" src={attempt.audioUrl}>
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+
+            {/* Transcript */}
+            {attempt.transcript && (
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Transcript</h3>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{attempt.transcript}</p>
+                </div>
+                {attempt.transcript.includes("mock") && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Note: This is a mock transcript for development. In production, this would be the actual
+                    speech-to-text transcription.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {/* AI Feedback */}
+        <FeedbackDisplay
+          overallScore={overallScore}
+          criteria={criteria}
+          strengths={strengths}
+          improvements={improvements}
+          tipsTitle="Practice Tips"
+          tips={tips}
+        />
+        {/* Questions References */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Questions</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {feedback.strengths.map((strength, index) => (
+              {(exercise.questions as string[]).map((question, index) => (
                 <li key={index} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                  <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0 mt-1" />
-                  <span>{strength}</span>
+                  <span className="font-semibold text-blue-600">{index + 1}.</span>
+                  <span>{question}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
-      )}
-      {/* Detailed Criteria Feedback */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {criteria.map(({ icon: Icon, ...criteria }, index) => (
-          <Card key={index}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon className="w-5 h-5 text-blue-600" />
-                  <CardTitle className="text-lg">{criteria.title}</CardTitle>
-                </div>
-                <div className={`text-2xl font-bold ${getScoreColor(criteria.data.score)}`}>{criteria.data.score}</div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{criteria.description}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Score Badge */}
-              <div
-                className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(
-                  criteria.data.score
-                )}`}>
-                Band {criteria.data.score}
-              </div>
-              {/* Comments */}
-              <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Feedback</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300">{criteria.data.comments}</p>
-              </div>
-              {/* Suggestions */}
-              {criteria.data.suggestions && criteria.data.suggestions.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Suggestions</h4>
-                  <ul className="space-y-1">
-                    {criteria.data.suggestions.map((suggestion, index) => (
-                      <li key={index} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                        <span className="text-blue-600 mt-1">•</span>
-                        <span>{suggestion}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Errors */}
-              {criteria.data.errors && criteria.data.errors.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Errors</h4>
-                  <ul className="space-y-1">
-                    {criteria.data.errors.map((error, index) => (
-                      <li key={index} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                        <span className="text-red-600 mt-1">x</span>
-                        <span>{error}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Pronunciation Issue */}
-              {criteria.data.issues && criteria.data.issues.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Issues</h4>
-                  <ul className="space-y-1">
-                    {criteria.data.issues.map((issue, index) => (
-                      <li key={index} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                        <span className="text-red-600 mt-1">x</span>
-                        <span>{issue}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+        {/* Action Buttons */}
+        <div className="flex gap-4 justify-center">
+          <Link href={`/speaking/${exercise.id}`}>
+            <Button variant="outline" size="lg">
+              <ArrowLeftCircleIcon className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </Link>
+          <Link href="/speaking">
+            <Button size="lg">More Exercises</Button>
+          </Link>
+        </div>
       </div>
-      {/* Key Improvements */}
-      <Card className="border-blue-200 dark:border-blue-800">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-            <ArrowTrendingUpIcon className="w-5 h-5" />
-            Key Areas for Improvement
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3">
-            {improvements.map((improvement, index) => (
-              <li key={index} className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
-                  {index + 1}
-                </span>
-                <span className="text-gray-700 dark:text-gray-300">{improvement}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Next Steps */}
-      <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
-        <CardHeader>
-          <CardTitle className="text-purple-900 dark:text-purple-100">Practice Tips</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm text-purple-900 dark:text-purple-100">
-            <p>🎤 Record yourself regularly to track improvement over time</p>
-            <p>👂 Listen to native speakers and mimic their pronunciation</p>
-            <p>📚 Expand vocabulary by reading widely and noting new words</p>
-            <p>🗣️ Practice speaking on various topics for 2 minutes without stopping</p>
-            <p>✍️ Work on grammar through writing exercises and correction</p>
-            <p>💬 Join speaking groups or find language exchange partners</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

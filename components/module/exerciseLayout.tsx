@@ -9,7 +9,7 @@ import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import Timer from "./timer";
 import { toast } from "sonner";
-import QuestionsPanel from "./reading/questionsPanel";
+import QuestionsPanel from "./questionsPanel";
 
 type Question = {
   id: string;

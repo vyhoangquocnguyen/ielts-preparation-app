@@ -144,21 +144,23 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
     setCurrentTime(parseFloat(e.target.value));
   };
   return (
-    <div className="relative w-full max-w-2xl p-8 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden text-white">
+    <div className="relative w-full max-w-2xl p-8 rounded-3xl bg-linear-to-br from-background/70 to-secondary/50 backdrop-blur-xl border border-border/50 shadow-2xl overflow-hidden text-foreground">
       {/* Header Info */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase">IELTS Prep App</h3>
-        <p className="text-xs text-white/40">Listening Practice: Section 1</p>
+        <h3 className="text-sm font-semibold tracking-wider text-cyan-600 dark:text-cyan-400 uppercase">
+          IELTS Prep App
+        </h3>
+        <p className="text-xs text-muted-foreground">Listening Practice: Section 1</p>
       </div>
 
       {/* Main Controls Overlay */}
-      <div className="flex items-center justify-center gap-8 mb-8">
+      <div className="flex items-center  justify-center gap-8 mb-8">
         {/* Skip Back (Optional) */}
         <button
           onClick={() => {
             if (audioRef.current) audioRef.current.currentTime -= 10;
           }}
-          className="text-white/40 hover:text-white transition">
+          className="text-muted-foreground hover:text-foreground transition">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -187,7 +189,7 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
           onClick={() => {
             if (audioRef.current) audioRef.current.currentTime += 10;
           }}
-          className="text-white/40 hover:text-white transition">
+          className="text-muted-foreground hover:text-foreground transition">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -202,7 +204,7 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
         <div className="absolute right-8 top-1/2 -translate-y-1/2 mt-3">
           <button
             onClick={() => handleSpeedChange(speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-medium hover:bg-white/10 transition">
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary border border-border text-xs font-medium hover:bg-muted transition">
             {speed.toFixed(1)}x
           </button>
         </div>
@@ -216,7 +218,7 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
             {waveform.map((height: number, i: number) => (
               <div
                 key={i}
-                className="w-1 bg-cyan-400 rounded-full transition-all duration-300"
+                className="w-1 bg-cyan-700 rounded-full transition-all duration-300"
                 style={{
                   height: `${height}%`,
                   opacity: i / waveform.length < currentTime / duration ? 1 : 0.3,
@@ -226,9 +228,9 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
           </div>
 
           {/* Actual Progress Line Overlay */}
-          <div className="absolute bottom-0 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="absolute bottom-0 w-full h-1 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all duration-100"
+              className="h-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)] dark:bg-cyan-400 transition-all duration-100"
               style={{ width: `${(currentTime / duration) * 100}%` }}
             />
           </div>
@@ -246,7 +248,7 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
         </div>
 
         {/* Time Labels & Volume & Mute */}
-        <div className="flex justify-between items-center text-[10px] font-bold tracking-tighter uppercase text-white/30">
+        <div className="flex justify-between items-center text-[10px] font-bold tracking-tighter uppercase text-muted-foreground">
           <span>{formatTime(currentTime)}</span>
           <div className="flex items-center gap-2">
             <Slider
