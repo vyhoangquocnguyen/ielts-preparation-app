@@ -47,7 +47,7 @@ const ExercisePage = async ({ params }: { params: Promise<{ exerciseId: string }
         </div>
       </div>
       {/* Main Content - Client Component */}
-      <ExerciseLayout exercise={exercise} />
+      <ExerciseLayout exercise={exercise} moduleType="reading" />
     </div>
   );
 };

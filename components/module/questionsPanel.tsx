@@ -75,7 +75,7 @@ const QuestionsPanel = ({ questions, answers, onAnswerChange }: QuestionsPanelPr
       <h2 className="text-xl font-bold">Questions</h2>
       {questions.map((question) => (
         <div key={question.id} className="space-y-2">
-          {renderQuestion(question, answers, onAnswerChange)} {renderQuestion(question, answers, onAnswerChange)}
+          {renderQuestion(question, answers, onAnswerChange)}
         </div>
       ))}
     </div>
