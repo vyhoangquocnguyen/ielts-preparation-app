@@ -32,9 +32,23 @@ export function ExerciseLayout({ exercise }: { exercise: Exercise }) {
   const router = useRouter();
 
   // State Management
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
+
+  // State persistence for auto-save
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    if (typeof window !== "undefined") {
+      const savedAnswers = sessionStorage.getItem(`reading-${exercise.id}`);
+      if (savedAnswers) {
+        try {
+          return JSON.parse(savedAnswers);
+        } catch (error) {
+          console.error("Error parsing saved answers:", error);
+        }
+      }
+    }
+    return {};
+  });
 
   const handleAnswerChange = useCallback((questionId: string, answer: string) => {
     setAnswers((prevAnswers) => ({

@@ -64,7 +64,7 @@ function renderQuestion(
   // Fallback for unknown types
   return (
     <div className="p-4 border bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-      <p className="text-sm  text-yellow-800 dark:text-yellow-400">Unknown question type: {question.questionType}</p>
+      <p className="text-sm text-yellow-800 dark:text-yellow-400">Unknown question type: {question.questionType}</p>{" "}
     </div>
   );
 }
@@ -75,8 +75,7 @@ const QuestionsPanel = ({ questions, answers, onAnswerChange }: QuestionsPanelPr
       <h2 className="text-xl font-bold">Questions</h2>
       {questions.map((question) => (
         <div key={question.id} className="space-y-2">
-          {/* {Render question type specific component} */}
-          {renderQuestion(question, answers, onAnswerChange)}
+          {renderQuestion(question, answers, onAnswerChange)} {renderQuestion(question, answers, onAnswerChange)}
         </div>
       ))}
     </div>

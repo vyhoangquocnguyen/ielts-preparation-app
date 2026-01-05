@@ -90,7 +90,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   }
   const user = await prisma.user.findUnique({
     where: {
-      id: userId,
+      clerkId: userId,
     },
   });
   if (!user) {
@@ -153,8 +153,8 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
-  const startOfMonth = new Date(year, month - 1, 1);
-  const endOfMonth = new Date(year, month, 0);
+  const startOfMonth = new Date(year, month, 1);
+  const endOfMonth = new Date(year, month + 1, 0);
   const monthlyStats = await prisma.speakingAttempt.aggregate({
     where: {
       userId: user.id,

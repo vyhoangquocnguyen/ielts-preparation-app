@@ -15,7 +15,6 @@ export interface FeedbackCriterion {
 }
 
 interface FeedbackDisplayProps {
-  overallScore: number;
   criteria: FeedbackCriterion[];
   strengths?: string[];
   improvements?: string[];

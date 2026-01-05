@@ -40,7 +40,7 @@ export default async function ReviewPage({ params }: Props) {
   const { success, data: attempt } = await getWritingAttempt(attemptId);
   // Verify attempt exists and match exerciseId
   if (!success || attempt?.taskId !== taskId) return redirect(`/writing`);
-  const { task, content, overallScore, timeSpent, feedback:rawFeedback  } = attempt;
+  const { task, content, overallScore, timeSpent, feedback: rawFeedback } = attempt;
   const feedback = rawFeedback as WritingFeedbackDetailed;
 
   const criteria = [
@@ -101,7 +101,7 @@ export default async function ReviewPage({ params }: Props) {
         <Card className="mb-6 border-2 ">
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full shadown-lg mb-4">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full shadow-lg mb-4">
                 <span className="text-4xl font-bold">{overallScore}</span>
               </div>
               <h2 className="text-2xl font-bold mb-2">Overall Band Score</h2>

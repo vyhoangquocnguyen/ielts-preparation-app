@@ -144,7 +144,7 @@ function AudioPlayer({ audioUrl, onTimeUpdate, onEnded }: AudioPlayerProps) {
     setCurrentTime(parseFloat(e.target.value));
   };
   return (
-    <div className="relative w-full max-w-2xl p-8 rounded-3xl bg-linear-to-br from-background/70 to-secondary/50 backdrop-blur-xl border border-border/50 shadow-2xl overflow-hidden text-foreground">
+    <div className="relative w-full max-w-2xl p-8 rounded-3xl bg-gradient-to-br from-background/70 to-secondary/50 backdrop-blur-xl border border-border/50 shadow-2xl overflow-hidden text-foreground">
       {/* Header Info */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold tracking-wider text-cyan-600 dark:text-cyan-400 uppercase">

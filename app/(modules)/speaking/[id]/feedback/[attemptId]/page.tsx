@@ -15,16 +15,19 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export const generateMetadata = async ({ params }: { params: { id: string; attemptId: string } }) => {
+export const generateMetadata = async ({ params }: { params: Promise<{ id: string; attemptId: string }> }) => {
   try {
     const { attemptId } = await params;
     const { attempt, success } = await getSpeakingFeedback(attemptId);
     if (attempt !== undefined && success) {
       return {
         title: `Review: ${attempt.exercise.title} - Score ${attempt.overallScore?.toFixed(1)}`,
-        description: `Your scored ${attempt.overallScore?.toFixed(1)} on ${attempt.exercise.title}`,
+        description: `You scored ${attempt.overallScore?.toFixed(1)} on ${attempt.exercise.title}`,
       };
     }
+    return {
+      title: "Review - IELTS Speaking",
+    };
   } catch {
     return {
       title: "Review - IELTS Speaking",
@@ -103,8 +106,6 @@ export default async function SpeakingFeedBackPage({ params }: { params: Promise
             <ArrowLeftCircleIcon className="w-6 h-6" />
             Back to Speaking Exercises
           </Link>
-          <h1 className="text-3xl font-bold mt-2">AI Feedback</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">{attempt.exercise.title}</p>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Feedback</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             {exercise.title} • {exercise.part.replace("part", "Part ")}
