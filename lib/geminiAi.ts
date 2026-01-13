@@ -96,10 +96,9 @@ Be constructive, specific, and provide actionable feedback. Focus on IELTS band 
 export async function generateSpeakingAIFeedback(
   part: string,
   questions: string[],
-  transcript: string,
+  audioBase64: string,
   duration: number
-): Promise<SpeakingFeedbackDetailed>
-{
+): Promise<SpeakingFeedbackDetailed> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
@@ -107,47 +106,55 @@ export async function generateSpeakingAIFeedback(
       part === "part1" ? "Part 1" : part === "part2" ? "Part 2" : "Part 3"
     } response.
 
-        Questions: ${questions.join(", ")}
+Questions: ${questions.join(", ")}
 
-        Transcript (${duration} seconds):
-        ${transcript}
+The audio recording is ${duration} seconds long.
 
-        Provide detailed feedback in the following JSON format:
-        {
-          "overallScore": <number between 0-9 in 0.5 increments>,
-          "fluencyCoherence": {
-            "score": <number 0-9>,
-            "comments": "<detailed comments>",
-            "suggestions": ["<suggestion 1>", "<suggestion 2>"]
-          },
-          "lexicalResource": {
-            "score": <number 0-9>,
-            "comments": "<detailed comments>",
-            "suggestions": ["<suggestion 1>", "<suggestion 2>"]
-          },
-          "grammaticalAccuracy": {
-            "score": <number 0-9>,
-            "comments": "<detailed comments>",
-            "errors": ["<error 1>", "<error 2>"]
-          },
-          "pronunciation": {
-            "score": <number 0-9>,
-            "comments": "<detailed comments>",
-            "issues": ["<issue 1>", "<issue 2>"]
-          },
-          "improvements": ["<key improvement 1>", "<key improvement 2>", "<key improvement 3>"],
-          "strengths": ["<strength 1>", "<strength 2>"]
-        }
+Provide detailed feedback in the following JSON format:
+{
+  "overallScore": <number between 0-9 in 0.5 increments>,
+  "fluencyCoherence": {
+    "score": <number 0-9>,
+    "comments": "<detailed comments>",
+    "suggestions": ["<suggestion 1>", "<suggestion 2>"]
+  },
+  "lexicalResource": {
+    "score": <number 0-9>,
+    "comments": "<detailed comments>",
+    "suggestions": ["<suggestion 1>", "<suggestion 2>"]
+  },
+  "grammaticalAccuracy": {
+    "score": <number 0-9>,
+    "comments": "<detailed comments>",
+    "errors": ["<error 1>", "<error 2>"]
+  },
+  "pronunciation": {
+    "score": <number 0-9>,
+    "comments": "<detailed comments>",
+    "issues": ["<issue 1>", "<issue 2>"]
+  },
+  "improvements": ["<key improvement 1>", "<key improvement 2>", "<key improvement 3>"],
+  "strengths": ["<strength 1>", "<strength 2>"]
+}
 
-        Be constructive, specific, and provide actionable feedback. Consider:
-        - Natural speech patterns and hesitations
-        - Vocabulary range and appropriacy
-        - Grammar accuracy and complexity
-        - Pronunciation clarity (based on transcript quality)
-        - Fluency and coherence of ideas`;
+Be constructive, specific, and provide actionable feedback. Consider:
+- Natural speech patterns and hesitations
+- Vocabulary range and appropriacy
+- Grammar accuracy and complexity
+- Pronunciation clarity
+- Fluency and coherence of ideas`;
 
-    // Call Gemini API
-    const result = await model.generateContent(systemPrompt);
+    // Call Gemini API with audio as inline data
+    // This allows Gemini to process the audio directly using its multimodal capabilities
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: "audio/webm",
+          data: audioBase64,
+        },
+      },
+      systemPrompt,
+    ]);
     const text = result.response.text();
     // Extract JSON from response (handle markdown code blocks)
     let jsonText = text;

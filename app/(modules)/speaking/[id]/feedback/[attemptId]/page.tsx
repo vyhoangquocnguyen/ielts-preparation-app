@@ -25,9 +25,6 @@ export const generateMetadata = async ({ params }: { params: Promise<{ id: strin
         description: `You scored ${attempt.overallScore?.toFixed(1)} on ${attempt.exercise.title}`,
       };
     }
-    return {
-      title: "Review - IELTS Speaking",
-    };
   } catch {
     return {
       title: "Review - IELTS Speaking",
@@ -172,7 +169,7 @@ export default async function SpeakingFeedBackPage({ params }: { params: Promise
           tips={tips}
         />
         {/* Questions References */}
-        <Card className="mb-6">
+        <Card className="m-6">
           <CardHeader>
             <CardTitle>Questions</CardTitle>
           </CardHeader>

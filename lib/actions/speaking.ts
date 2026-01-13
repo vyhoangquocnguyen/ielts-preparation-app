@@ -83,6 +83,11 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     score?: number;
   };
 }> {
+  console.log("=== SUBMIT SPEAKING EXERCISE START ===");
+  console.log("Exercise ID:", data.exerciseId);
+  console.log("Audio blob length:", data.audioBlob.length);
+  console.log("Duration:", data.duration);
+
   // 1. Authenticate user
   const { userId } = await auth();
   if (!userId) {
@@ -124,32 +129,30 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   });
 
   console.log("Audio uploaded to storage:", blob.url);
-  /*** TRANSCRIPT AUDIO ***/
-  /*** TODO: IMPLEMENT ACTUAL TRANSCRIPTION - (maybe OpenAI Whisper API ?) ***/
-  const transcript = await transcribeAudio(blob.url);
 
+  /** base64 -> GenerateAI feedback, no need for transcript**/
   /*** GENERATE AI FEEDBACK ***/
   const feedback = await generateSpeakingAIFeedback(
     exercise.part,
     exercise.questions as string[],
-    transcript,
+    base64Data,
     data.duration
   );
 
-  /*** TODO: SAVE TO DB ***/
+  /*** SAVE TO DB ***/
   const attempt = await prisma.speakingAttempt.create({
     data: {
       userId: user.id,
       exerciseId: exercise.id,
       audioUrl: blob.url,
-      transcript,
+      // transcript,
       overallScore: feedback.overallScore,
       feedback: feedback,
       completed: true,
       audioDuration: data.duration,
     },
   });
-  /*** TODO: UPDATE USER ANALYTICS ***/
+  /*** UPDATE USER ANALYTICS ***/
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
@@ -188,7 +191,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     },
   });
 
-  /*** TODO: UPDATE USER PROGRESS ***/
+  /*** UPDATE USER PROGRESS ***/
   const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
   await prisma.user.update({

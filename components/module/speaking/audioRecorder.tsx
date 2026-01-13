@@ -20,7 +20,7 @@ type Props = {
 
 export default function AudioRecorder({ onRecordingComplete, maxDuration }: Props) {
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  // const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
@@ -51,7 +51,7 @@ export default function AudioRecorder({ onRecordingComplete, maxDuration }: Prop
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      setIsPaused(false);
+      // setIsPaused(false);
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -85,7 +85,9 @@ export default function AudioRecorder({ onRecordingComplete, maxDuration }: Prop
 
         stream.getTracks().forEach((track) => track.stop());
 
-        onRecordingComplete(audioBlob, duration);
+        // Calculate actual duration from start time instead of using state
+        const actualDuration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        onRecordingComplete(audioBlob, actualDuration);
       };
 
       mediaRecorder.start();
@@ -167,7 +169,7 @@ export default function AudioRecorder({ onRecordingComplete, maxDuration }: Prop
             <PlayCircleIcon className="w-4 h-4" />
             Recording complete! Listen to your response:
           </p>
-          <audio controls className="w-full" src={audioUrl}>
+          <audio controls className="w-full" src={audioUrl ?? undefined}>
             Your browser does not support the audio element.
           </audio>
         </div>

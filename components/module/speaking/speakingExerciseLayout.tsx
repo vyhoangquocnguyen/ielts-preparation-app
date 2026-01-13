@@ -34,6 +34,7 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
     }
     if (duration < 10) {
       setError("Please record for at least 10 seconds");
+      console.log(duration)
       return;
     }
     setIsSubmitting(true);
@@ -44,21 +45,36 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
       reader.readAsDataURL(audioBlob);
 
       reader.onloadend = async () => {
-        const base64Audio = reader.result as string;
+        try {
+          const base64Audio = reader.result as string;
 
-        //   Call server action to submit exercise
-        const result = await submitSpeakingExercise({
-          exerciseId: exercise.id,
-          audioBlob: base64Audio,
-          duration,
-        });
-        // TODO: can deconstruct result here
-        if (result.success && result.data) {
-          // Navigate to feedback page
-          router.push(`/speaking/${exercise.id}/feedback/${result.data.attemptId}`);
+          //   Call server action to submit exercise
+          const result = await submitSpeakingExercise({
+            exerciseId: exercise.id,
+            audioBlob: base64Audio,
+            duration,
+          });
+
+          if (result.success && result.data) {
+            // Navigate to feedback page
+            router.push(`/speaking/${exercise.id}/feedback/${result.data.attemptId}`);
+          } else {
+            setError(result.data?.error || "Failed to submit exercise");
+            setIsSubmitting(false);
+          }
+        } catch (error) {
+          console.error("Error submitting exercise:", error);
+          setError("Failed to submit exercise");
+          setIsSubmitting(false);
         }
       };
+
+      reader.onerror = () => {
+        setError("Failed to read audio file");
+        setIsSubmitting(false);
+      };
     } catch (error) {
+      console.error("Error in handleSubmit:", error);
       setError("Failed to submit exercise");
       setIsSubmitting(false);
     }

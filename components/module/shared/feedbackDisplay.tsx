@@ -15,6 +15,7 @@ export interface FeedbackCriterion {
 }
 
 interface FeedbackDisplayProps {
+  overallScore: number;
   criteria: FeedbackCriterion[];
   strengths?: string[];
   improvements?: string[];
@@ -24,6 +25,7 @@ interface FeedbackDisplayProps {
 }
 
 export default function FeedbackDisplay({
+  overallScore,
   criteria,
   strengths,
   improvements,
@@ -32,7 +34,15 @@ export default function FeedbackDisplay({
   tips,
 }: FeedbackDisplayProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-6">
+      {/* Overall Score */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <StarIcon className="w-5 h-5 text-green-600" />
+          Overall Score
+        </div>
+        <div className={`text-2xl font-bold ${getScoreColor(overallScore)}`}>{overallScore}</div>
+      </div>
       {/* Strengths */}
       {strengths && strengths.length > 0 && (
         <Card className="border-green-200 dark:border-green-800">
