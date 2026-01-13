@@ -97,7 +97,8 @@ export async function generateSpeakingAIFeedback(
   part: string,
   questions: string[],
   audioBase64: string,
-  duration: number
+  duration: number,
+  mimeType: string = "audio/webm"
 ): Promise<SpeakingFeedbackDetailed> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
@@ -149,7 +150,7 @@ Be constructive, specific, and provide actionable feedback. Consider:
     const result = await model.generateContent([
       {
         inlineData: {
-          mimeType: "audio/webm",
+          mimeType,
           data: audioBase64,
         },
       },
