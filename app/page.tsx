@@ -2,9 +2,10 @@ import LandingFeatures from "@/components/landing/landingFeatures";
 import LandingHero from "@/components/landing/landingHero";
 import LandingModules from "@/components/landing/landingModules";
 import LandingNav from "@/components/landing/landingNav";
-import LandingCTA from "@/components/landing/loadingCTA";
+import LandingCTA from "@/components/landing/landingCTA";
+import { Metadata } from "next";
 
-export const meta = {
+export const metadata: Metadata = {
   title: "IELTS Prep AI - Master Your IELTS with AI-Powered Learning",
   description:
     "Achieve your target band score with personalized feedback, realistic practice tests, and AI-driven insights across all four modules.",
@@ -32,8 +33,8 @@ const Home = () => {
         <LandingModules />
         {/* Landing CTA */}
         <LandingCTA />
-        {/* Landing Footer */}
       </section>
+      {/* Landing Footer */}
       <footer className="py-8 px-4 border-t border-indigo-500/10 bg-slate-950/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-gray-500">&copy; {new Date().getFullYear()} IELTS Prep AI. All rights reserved.</p>

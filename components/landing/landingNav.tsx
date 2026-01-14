@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bars3Icon, GlobeAltIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Button } from "../ui/button";
@@ -26,7 +26,7 @@ const LandingNav = () => {
       <div className="container mx-auto">
         <div className="flex items-center justify-between mx-auto px-4">
           <Link href="/" className="flex h-16 shrink-0 items-center gap-x-2 mt-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-purple-800 to-blue-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-800 to-blue-600">
               <GlobeAltIcon className="h-5 w-5 text-white " />
             </div>
             <span className="text-lg font-bold text-gray-900 dark:text-white">
@@ -64,7 +64,7 @@ const LandingNav = () => {
         </div>
 
         {/* Mobile Menu */}
-        <Activity mode={isMobileMenuOpen ? "visible" : "hidden"}>
+        {isMobileMenuOpen && (
           <div className="md:hidden mt-4 px-6 mx-auto space-y-4 ">
             <a
               href="#features"
@@ -93,7 +93,7 @@ const LandingNav = () => {
               <Button className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700">Get Started</Button>
             </Link>
           </div>
-        </Activity>
+        )}
       </div>
     </nav>
   );

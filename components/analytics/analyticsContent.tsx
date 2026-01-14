@@ -4,6 +4,6 @@ interface Props {
   timeRange: number;
 }
 
-export default function analyticsContent({ timeRange }: Props) {
+export default function AnalyticsContent({ timeRange: _timeRange }: Props) {
   return <div></div>;
 }

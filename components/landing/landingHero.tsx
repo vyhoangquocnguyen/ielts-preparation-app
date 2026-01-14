@@ -59,8 +59,8 @@ export default function LandingHero() {
       ref={heroRef}
       className="relative min-h-screen flex items-center justify-center px-4 pt-20 overflow-hidden">
       {/* Floating Elements */}
-      <div className="absolute top-1/4 left-[10%] w-24 h-24 bg-linear-to-br from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-xl animate-float" />
-      <div className="absolute bottom-1/4 right-[10%] w-32 h-32 bg-linear-to-br from-amber-500/20 to-indigo-500/20 rounded-3xl blur-xl animate-float-delayed" />
+      <div className="absolute top-1/4 left-[10%] w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-xl animate-float" />
+      <div className="absolute bottom-1/4 right-[10%] w-32 h-32 bg-gradient-to-br from-amber-500/20 to-indigo-500/20 rounded-3xl blur-xl animate-float-delayed" />
       <div className="max-w-5xl mx-auto text-center relative z-10">
         {/* Title */}
         <h1 ref={titleRef} className="text-5xl md:text-7xl font-black mb-6 leading-tight">
@@ -89,7 +89,7 @@ export default function LandingHero() {
               <ArrowRightIcon className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
-          <a href="features">
+          <a href="#features">
             <Button
               size="lg"
               variant="outline"
