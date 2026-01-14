@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
   BookOpenIcon,
-  ChartBarIcon,
   GlobeAltIcon,
   HomeIcon,
   MicrophoneIcon,
@@ -17,7 +16,7 @@ const navigation = [
   { name: "Reading", href: "/reading", icon: BookOpenIcon },
   { name: "Writing", href: "/writing", icon: PencilIcon },
   { name: "Speaking", href: "/speaking", icon: MicrophoneIcon },
-  { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
+  // { name: "Analytics", href: "/analytics", icon: ChartBarIcon }, //TODO: Add Analytics
   { name: "Profile", href: "/profile", icon: UserIcon },
 ];
 

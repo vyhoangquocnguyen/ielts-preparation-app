@@ -83,11 +83,6 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     score?: number;
   };
 }> {
-  console.log("=== SUBMIT SPEAKING EXERCISE START ===");
-  console.log("Exercise ID:", data.exerciseId);
-  console.log("Audio blob length:", data.audioBlob.length);
-  console.log("Duration:", data.duration);
-
   // 1. Authenticate user
   const { userId } = await auth();
   if (!userId) {

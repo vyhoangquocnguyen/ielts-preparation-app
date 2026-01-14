@@ -38,7 +38,7 @@
 
 /* Dark mode colors */
 .dark {
-  --color-background: hsl(222.2 84% 4.9%);
+  --color-background: hsl(223, 75%, 6%);
   --color-foreground: hsl(210 40% 98%);
   --color-card: hsl(222.2 84% 4.9%);
   --color-card-foreground: hsl(210 40% 98%);
