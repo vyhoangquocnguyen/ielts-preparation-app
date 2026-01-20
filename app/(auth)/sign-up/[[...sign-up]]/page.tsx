@@ -4,9 +4,9 @@ import { useUser, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
 const SignUpPage = () => {
-  const isSignedIn = useUser();
+  const { isSignedIn, isLoaded } = useUser();
 
-  if (!isSignedIn) {
+  if (isSignedIn && isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-100 to-amber-200 dark:from-blue-800 dark:to-transparent px-4">
         <div className="w-full max-w-md glass p-8 rounded-2xl shadow-xl text-center flex flex-col items-center animate-fade-in relative overflow-hidden">
@@ -58,21 +58,17 @@ const SignUpPage = () => {
             IELTS <span className="gradient-text"> Prep Pro</span>
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Sign in to continue your learning journey</p>
-              </div>
-              <SignUp
-                        appearance={{
+        </div>
+        <SignUp
+          appearance={{
             elements: {
-              formButtonPrimary: 
-                'bg-primary hover:bg-primary/90 text-white',
-              card: 'shadow-xl rounded-2xl',
-              headerTitle: 'text-2xl font-bold',
-              headerSubtitle: 'text-gray-600 dark:text-gray-400',
-              socialButtonsBlockButton: 
-                'border-2 hover:bg-gray-50 dark:hover:bg-gray-800',
-              formFieldInput: 
-                'rounded-lg border-gray-300 dark:border-gray-700',
-              footerActionLink: 
-                'text-primary hover:text-primary/80',
+              formButtonPrimary: "bg-primary hover:bg-primary/90 text-white",
+              card: "shadow-xl rounded-2xl",
+              headerTitle: "text-2xl font-bold",
+              headerSubtitle: "text-gray-600 dark:text-gray-400",
+              socialButtonsBlockButton: "border-2 hover:bg-gray-50 dark:hover:bg-gray-800",
+              formFieldInput: "rounded-lg border-gray-300 dark:border-gray-700",
+              footerActionLink: "text-primary hover:text-primary/80",
             },
           }}
           routing="path"

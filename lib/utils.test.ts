@@ -128,12 +128,13 @@ describe("Utility Functions", () => {
     });
 
     it("should return 8.5 for 82-89%", () => {
-      expect(calculateBandScore(16, 20)).toBe(8.5);
+      expect(calculateBandScore(17, 20)).toBe(8.5); // 85%
       expect(calculateBandScore(82, 100)).toBe(8.5);
     });
 
     it("should return 8 for 75-81%", () => {
-      expect(calculateBandScore(15, 20)).toBe(8);
+      expect(calculateBandScore(15, 20)).toBe(8); // 75%
+      expect(calculateBandScore(16, 20)).toBe(8); // 80%
       expect(calculateBandScore(75, 100)).toBe(8);
     });
 

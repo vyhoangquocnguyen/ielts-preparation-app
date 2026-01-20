@@ -24,8 +24,7 @@ export async function getCurrentUser() {
   // Update streak if needed
   const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
-  // If streak changed or we want to update last seen/study date (optional here,
-  // but let's at least ensure streak is consistent)
+
   if (newStreak !== user.currentStreak) {
     const updatedUser = await prisma.user.update({
       where: { id: user.id },

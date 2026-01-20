@@ -2,11 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
-import { SubmitSpeakingInput } from "../validation";
+import { SubmitSpeakingInput, submitSpeakingSchema } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { generateSpeakingAIFeedback } from "../geminiAi";
-import { calculateNewStreak, transcribeAudio } from "../utils";
+import { calculateNewStreak } from "../utils";
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -83,12 +83,19 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     score?: number;
   };
 }> {
-  console.log("=== SUBMIT SPEAKING EXERCISE START ===");
-  console.log("Exercise ID:", data.exerciseId);
-  console.log("Audio blob length:", data.audioBlob.length);
-  console.log("Duration:", data.duration);
+  // 1. Validate Input
+  const validation = submitSpeakingSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, data: { error: "Invalid input data" } };
+  }
+  // Validate audio blob format
+  const parsed = validation.data;
+  const [meta, base64Data] = parsed.audioBlob.split(",", 2);
+  if (!base64Data || !meta.startsWith("data:audio/")) {
+    return { success: false, data: { error: "Invalid audio data format" } };
+  }
 
-  // 1. Authenticate user
+  // 2. Authenticate user
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
@@ -116,8 +123,8 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     return { success: false, data: { error: "Exercise not found" } };
   }
   /*** PROCESS AUDIO ***/
-  // 1. extract base64 data
-  const base64Data = data.audioBlob.split(",")[1];
+  // 1. extract base64 data - already done above
+  // const base64Data = data.audioBlob.split(",")[1];
   // 2. convert base64 to buffer
   const buffer = Buffer.from(base64Data, "base64");
 
@@ -136,7 +143,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     exercise.part,
     exercise.questions as string[],
     base64Data,
-    data.duration
+    data.duration,
   );
 
   /*** SAVE TO DB ***/

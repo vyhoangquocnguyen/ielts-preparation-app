@@ -38,7 +38,7 @@
 
 /* Dark mode colors */
 .dark {
-  --color-background: hsl(222.2 84% 4.9%);
+  --color-background: hsl(223, 75%, 6%);
   --color-foreground: hsl(210 40% 98%);
   --color-card: hsl(222.2 84% 4.9%);
   --color-card-foreground: hsl(210 40% 98%);
@@ -90,7 +90,6 @@
     @apply bg-gray-400 dark:bg-gray-600;
   }
 
-  
   /* Animations */
   @keyframes slide-in-from-right {
     from {
@@ -118,8 +117,6 @@
       opacity: 1;
     }
   }
-
-
 
   .animate-slide-in-right {
     animation: slide-in-from-right 0.3s ease-out;
@@ -153,4 +150,60 @@ input[type="range"]::-webkit-slider-thumb {
   background: #22d3ee; /* cyan-400 */
   box-shadow: 0 0 10px #22d3ee;
   border: 2px solid white;
+}
+/* Custom animations for landing page */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes float-delayed {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 8s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Gradient text animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* Delay utilities */
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+.delay-1000 {
+  animation-delay: 1000ms;
 }

@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IELTS Preparation App
 
-## Getting Started
+A comprehensive, AI-powered platform designed to help students master the IELTS exam. This application provides realistic practice modules for Speaking, Reading, Listening, and Writing, providing instant, AI-generated feedback and scoring.
 
-First, run the development server:
+![IELTS App Screenshot](https://via.placeholder.com/800x400?text=IELTS+Preparation+App+Dashboard)
+
+---
+
+## 🏗️ Architecture & Data Flow
+
+### Application Data Flow
+
+The application follows a modern Next.js server-side data flow. User interactions trigger Server Actions, which interact with the Postgres database and external AI services (Gemini).
+
+```mermaid
+flowchart TD
+    User([User]) <--> Client[Client UI (React/Next.js)]
+
+    subgraph Server [Server Side]
+        Action[Server Actions]
+        Auth[Clerk Auth]
+        Validation[Zod Validation]
+    end
+
+    subgraph Infrastructure
+        DB[(Postgres DB)]
+        Storage[Vercel Blob]
+        AI[Gemini AI]
+    end
+
+    Client -->|1. Submit Request| Action
+    Action -->|2. Authenticate| Auth
+    Action -->|3. Validate Data| Validation
+
+    Validation -->|Valid| DB
+    Validation -->|Valid| Storage
+    Validation -->|Valid| AI
+
+    AI -->|Generated Feedback| Action
+    DB -->|Persist Result| Action
+
+    Action -->|4. Return Response| Client
+```
+
+### Key Technologies
+
+- **Framework**: [Next.js 16.0.10](https://nextjs.org/) (App Router)
+- **Language**: TypeScript
+- **Authentication**: [Clerk](https://clerk.com/)
+- **Database**: PostgreSQL with [Prisma ORM](https://www.prisma.io/)
+- **AI Engine**: Google Gemini Pro (Generative AI)
+- **Styling**: Tailwind CSS
+- **Testing**: Playwright (E2E) & Vitest (Unit)
+
+---
+
+## ✨ Key Features
+
+- **🗣️ Speaking Module**: Record audio responses to realistic cues. Audio is uploaded, transcribed, and analyzed by AI for fluency, pronunciation, and lexical resource.
+- **📝 Writing Module**: Write essays for Task 1 and Task 2. Get instant band score estimation and rewritten samples for improvement.
+- **📖 Reading Module**: Practice with real-world reading passages and interactive question types (Multiple choice, gap fill).
+- **🎧 Listening Module**: Audio-synced listening tests with automated scoring.
+- **📊 Analytics Dashboard**: Track your progress over time with streaks, daily goals, and performance charts.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL Database URL
+
+### 1. Installation
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/vyhoangquocnguyen/ielts-preparation-app.git
+cd ielts-preparation-app
+npm install
+```
+
+### 2. Environment Setup
+
+Create a `.env` file in the root directory and add the following keys:
+
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/ielts_db"
+
+# Auth (Clerk)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# AI (Google Gemini)
+GEMINI_API_KEY=AIzaSy...
+
+# File Storage (Vercel Blob)
+BLOB_READ_WRITE_TOKEN=vercel_blob_...
+```
+
+### 3. Database Setup
+
+Push the schema to your database:
+
+```bash
+npx prisma db push
+```
+
+### 4. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧪 Testing
 
-## Learn More
+We ensure code quality through a rigorous testing suite.
 
-To learn more about Next.js, take a look at the following resources:
+- **Unit Tests**: Validate core logic and utilities.
+  ```bash
+  npm run test:unit
+  ```
+- **E2E Tests**: Validate full user journeys.
+  ```bash
+  npm run test:e2e
+  ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For a detailed guide on adding and debugging tests, please refer to [TESTING_GUIDE.md](./TESTING_GUIDE.md).

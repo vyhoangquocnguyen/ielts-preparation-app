@@ -1,0 +1,67 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90mC:/web-app-projects/ielts-preparation-app[39m
+
+ [31m❯[39m lib/utils.test.ts [2m([22m[2m35 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 40[2mms[22m[39m
+       [32m✓[39m should merge tailwind classes correctly[32m 10[2mms[22m[39m
+       [32m✓[39m should handle conditional classes[32m 0[2mms[22m[39m
+       [32m✓[39m should ignore false/null/undefined values[32m 0[2mms[22m[39m
+       [32m✓[39m should show 'just now' for recent times (< 1 minute)[32m 1[2mms[22m[39m
+       [32m✓[39m should show minutes ago for times < 60 minutes[32m 0[2mms[22m[39m
+       [32m✓[39m should show hours ago for times < 24 hours[32m 0[2mms[22m[39m
+       [32m✓[39m should show days ago for times < 30 days[32m 0[2mms[22m[39m
+       [32m✓[39m should show formatted date for old times (> 30 days)[32m 16[2mms[22m[39m
+       [32m✓[39m should return green for score >= 8.0[32m 0[2mms[22m[39m
+       [32m✓[39m should return blue for score >= 7.0 and < 8.0[32m 0[2mms[22m[39m
+       [32m✓[39m should return yellow for score >= 6.0 and < 7.0[32m 0[2mms[22m[39m
+       [32m✓[39m should return orange for score >= 5.0 and < 6.0[32m 0[2mms[22m[39m
+       [32m✓[39m should return red for score < 5.0[32m 0[2mms[22m[39m
+       [32m✓[39m should return 1 for first study session (no last study date)[32m 0[2mms[22m[39m
+       [32m✓[39m should keep the same streak if studied today[32m 0[2mms[22m[39m
+       [32m✓[39m should increment streak if studied yesterday[32m 0[2mms[22m[39m
+       [32m✓[39m should reset streak to 1 if missed a day[32m 0[2mms[22m[39m
+       [32m✓[39m should reset streak to 1 if more than a day missed[32m 0[2mms[22m[39m
+       [32m✓[39m should return 9 for 90% or more correct[32m 0[2mms[22m[39m
+[31m       [31m×[31m should return 8.5 for 82-89%[39m[32m 6[2mms[22m[39m
+       [32m✓[39m should return 8 for 75-81%[32m 0[2mms[22m[39m
+       [32m✓[39m should return 7.5 for 68-74%[32m 0[2mms[22m[39m
+       [32m✓[39m should return 7 for 60-67%[32m 0[2mms[22m[39m
+       [32m✓[39m should return 2.5 for less than 5%[32m 0[2mms[22m[39m
+       [32m✓[39m should handle edge case: 0 correct out of 0[32m 1[2mms[22m[39m
+       [32m✓[39m should return green for easy difficulty[32m 0[2mms[22m[39m
+       [32m✓[39m should return yellow for medium difficulty[32m 0[2mms[22m[39m
+       [32m✓[39m should return red for hard difficulty[32m 0[2mms[22m[39m
+       [32m✓[39m should return gray for unknown difficulty[32m 0[2mms[22m[39m
+       [32m✓[39m should format seconds only[32m 0[2mms[22m[39m
+       [32m✓[39m should format minutes and seconds[32m 0[2mms[22m[39m
+       [32m✓[39m should format hours, minutes, and seconds[32m 0[2mms[22m[39m
+       [32m✓[39m should handle zero[32m 0[2mms[22m[39m
+       [32m✓[39m should pad with zeros[32m 0[2mms[22m[39m
+       [32m✓[39m should handle large times[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m lib/utils.test.ts[2m > [22mUtility Functions[2m > [22mcalculateBandScore[2m > [22mshould return 8.5 for 82-89%
+[31m[1mAssertionError[22m: expected 8 to be 8.5 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8.5[39m
+[31m+ 8[39m
+
+[36m [2m❯[22m lib/utils.test.ts:[2m131:42[22m[39m
+    [90m129| [39m
+    [90m130| [39m    [34mit[39m([32m"should return 8.5 for 82-89%"[39m[33m,[39m () [33m=>[39m {
+    [90m131| [39m      [34mexpect[39m([34mcalculateBandScore[39m([34m16[39m[33m,[39m [34m20[39m))[33m.[39m[34mtoBe[39m([34m8.5[39m)[33m;[39m
+    [90m   | [39m                                         [31m^[39m
+    [90m132| [39m      [34mexpect[39m([34mcalculateBandScore[39m([34m82[39m[33m,[39m [34m100[39m))[33m.[39m[34mtoBe[39m([34m8.5[39m)[33m;[39m
+    [90m133| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m34 passed[39m[22m[90m (35)[39m
+[2m   Start at [22m 14:47:42
+[2m   Duration [22m 327ms[2m (transform 71ms, setup 0ms, import 103ms, tests 40ms, environment 0ms)[22m
+
