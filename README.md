@@ -2,7 +2,7 @@
 
 A comprehensive, AI-powered platform designed to help students master the IELTS exam. This application provides realistic practice modules for Speaking, Reading, Listening, and Writing, providing instant, AI-generated feedback and scoring.
 
-![IELTS App Screenshot](https://via.placeholder.com/800x400?text=IELTS+Preparation+App+Dashboard)
+<!-- ![IELTS App Screenshot](https://via.placeholder.com/800x400?text=IELTS+Preparation+App+Dashboard) -->
 
 ---
 
