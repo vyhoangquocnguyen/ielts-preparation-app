@@ -14,7 +14,7 @@ The application follows a modern Next.js server-side data flow. User interaction
 
 ```mermaid
 flowchart TD
-    User([User]) <--> Client[Client UI (React/Next.js)]
+    User([User]) <--> Client["Client UI (React/Next.js)"]
 
     subgraph Server [Server Side]
         Action[Server Actions]
