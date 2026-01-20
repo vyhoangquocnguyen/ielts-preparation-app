@@ -151,6 +151,8 @@ export default function LandingHero() {
 
         {/* Scroll indicator */}
         <button
+          type="button"
+          aria-label="Scroll to features"
           onClick={scrollToFeatures}
           ref={indicatorRef}
           className="fixed bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-20 hover:text-indigo-400 transition-colors">

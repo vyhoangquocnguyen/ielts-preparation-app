@@ -4,9 +4,9 @@ import { useUser, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
 const SignUpPage = () => {
-  const isSignedIn = useUser();
+  const { isSignedIn, isLoaded } = useUser();
 
-  if (isSignedIn) {
+  if (isSignedIn && isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-100 to-amber-200 dark:from-blue-800 dark:to-transparent px-4">
         <div className="w-full max-w-md glass p-8 rounded-2xl shadow-xl text-center flex flex-col items-center animate-fade-in relative overflow-hidden">

@@ -44,7 +44,7 @@ flowchart TD
 
 ### Key Technologies
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Framework**: [Next.js 16.0.10](https://nextjs.org/) (App Router)
 - **Language**: TypeScript
 - **Authentication**: [Clerk](https://clerk.com/)
 - **Database**: PostgreSQL with [Prisma ORM](https://www.prisma.io/)
@@ -76,7 +76,7 @@ flowchart TD
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/your-username/ielts-preparation-app.git
+git clone https://github.com/vyhoangquocnguyen/ielts-preparation-app.git
 cd ielts-preparation-app
 npm install
 ```

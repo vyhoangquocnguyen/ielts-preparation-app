@@ -89,7 +89,9 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     return { success: false, data: { error: "Invalid input data" } };
   }
   // Validate audio blob format
-  if (!data.audioBlob.includes(",")) {
+  const parsed = validation.data;
+  const [meta, base64Data] = parsed.audioBlob.split(",", 2);
+  if (!base64Data || !meta.startsWith("data:audio/")) {
     return { success: false, data: { error: "Invalid audio data format" } };
   }
 
@@ -121,8 +123,8 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     return { success: false, data: { error: "Exercise not found" } };
   }
   /*** PROCESS AUDIO ***/
-  // 1. extract base64 data
-  const base64Data = data.audioBlob.split(",")[1];
+  // 1. extract base64 data - already done above
+  // const base64Data = data.audioBlob.split(",")[1];
   // 2. convert base64 to buffer
   const buffer = Buffer.from(base64Data, "base64");
 
