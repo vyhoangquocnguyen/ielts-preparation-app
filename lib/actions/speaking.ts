@@ -2,11 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
-import { SubmitSpeakingInput } from "../validation";
+import { SubmitSpeakingInput, submitSpeakingSchema } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { generateSpeakingAIFeedback } from "../geminiAi";
-import { calculateNewStreak, transcribeAudio } from "../utils";
+import { calculateNewStreak } from "../utils";
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -83,7 +83,17 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     score?: number;
   };
 }> {
-  // 1. Authenticate user
+  // 1. Validate Input
+  const validation = submitSpeakingSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, data: { error: "Invalid input data" } };
+  }
+  // Validate audio blob format
+  if (!data.audioBlob.includes(",")) {
+    return { success: false, data: { error: "Invalid audio data format" } };
+  }
+
+  // 2. Authenticate user
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
@@ -131,7 +141,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     exercise.part,
     exercise.questions as string[],
     base64Data,
-    data.duration
+    data.duration,
   );
 
   /*** SAVE TO DB ***/

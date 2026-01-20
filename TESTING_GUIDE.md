@@ -1,256 +1,123 @@
-# Unit Testing Setup Guide for IELTS Preparation App
+# Testing Guide for IELTS Preparation App
 
-## Current Status
-- ✗ No testing framework installed
-- ✗ No test files exist
-- ✓ Example test provided: `lib/utils.test.ts`
+This project uses a dual-testing strategy to ensure application reliability:
 
-## Setup Instructions
+1.  **Vitest**: For **Unit Testing** (testing individual functions and utilities).
+2.  **Playwright**: For **End-to-End (E2E) Automation Testing** (testing the full application flow).
 
-### Step 1: Install Testing Dependencies
+---
+
+## 🚀 Quick Start
+
+### Run Unit Tests
+
+Test individual functions in `lib/` and utilities.
 
 ```bash
-npm install -D vitest @vitest/ui vi3 @testing-library/react @testing-library/jest-dom jsdom
+npm run test:unit
 ```
 
-**What each package does:**
-- **vitest** - Fast unit testing framework
-- **@vitest/ui** - Visual dashboard for test results
-- **vi3** - Testing utilities for Next.js
-- **@testing-library/react** - For testing React components
-- **@testing-library/jest-dom** - DOM matchers
-- **jsdom** - Virtual DOM for testing
+### Run Automation Tests (E2E)
 
-### Step 2: Update package.json Scripts
-
-Add these scripts to your `package.json`:
-
-```json
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
-  }
-}
-```
-
-### Step 3: Create vitest.config.ts
-
-Create a `vitest.config.ts` file in the root:
-
-```typescript
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
-    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './'),
-    },
-  },
-})
-```
-
-### Step 4: Create vitest.setup.ts
-
-```typescript
-import '@testing-library/jest-dom'
-```
-
-### Step 5: Run Tests
+Test the running application in a real browser environment.
 
 ```bash
-# Run all tests once
-npm test
+# 1. Ensure your dev server is running (optional, Playwright starts it if needed)
+npm run dev
 
-# Run tests in watch mode (reruns on file changes)
-npm test -- --watch
+# 2. Run the tests
+npm run test:e2e
+```
 
-# View test results in UI dashboard
-npm run test:ui
+### View E2E Test Report
 
-# Generate coverage report
-npm run test:coverage
+If tests fail, view the detailed HTML report.
+
+```bash
+npx playwright show-report
 ```
 
 ---
 
-## Testing Strategy for Your Project
+## 🧪 Unit Testing (Vitest)
 
-### 1. **Utility Functions** (Already has example)
-- Location: `lib/utils.ts`, `lib/validation.ts`
-- Test Type: Pure function testing
-- Coverage: ~80-90% (easiest to test)
-- Example: `lib/utils.test.ts`
+Unit tests focus on logic in isolation, such as calculation helpers, validation schemas, and data formatting.
 
-### 2. **Server Actions** (Next step)
-- Location: `lib/actions/*.ts`
-- Test Type: Mocked database/API calls
-- Example: Testing `lib/actions/reading.ts`
+- **Location**: `lib/*.test.ts` (Co-located with the code they test)
+- **Framework**: [Vitest](https://vitest.dev/)
+
+### How to write a Unit Test
+
+Create a file named `yourFile.test.ts` next to the file you want to test.
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { submitReadingExercise } from './actions/reading'
+// lib/example.test.ts
+import { describe, it, expect } from "vitest";
+import { sum } from "./example";
 
-// Mock Prisma
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    readingSubmission: {
-      create: vi.fn(),
-    },
-  },
-}))
-
-describe('Reading Actions', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('should submit reading exercise with correct answers', async () => {
-    // Test implementation
-  })
-})
+describe("sum function", () => {
+  it("adds two numbers correctly", () => {
+    expect(sum(1, 2)).toBe(3);
+  });
+});
 ```
 
-### 3. **React Components** (Medium difficulty)
-- Location: `components/`
-- Test Type: Component rendering and interaction
-- Use: React Testing Library
-- Example: Testing a form component
+### What to test
 
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
-import { ProfileForm } from '@/components/dashboard/profileForm'
-
-describe('ProfileForm', () => {
-  it('should render form fields', () => {
-    render(<ProfileForm />)
-    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument()
-  })
-
-  it('should submit form with valid data', async () => {
-    render(<ProfileForm />)
-    // Test implementation
-  })
-})
-```
-
-### 4. **Validation Schemas** (Easy)
-- Location: `lib/validation.ts`
-- Test Type: Schema validation
-- Example:
-
-```typescript
-import { describe, it, expect } from 'vitest'
-import { updateUserProfileSchema } from '@/lib/validation'
-
-describe('Validation Schemas', () => {
-  it('should validate correct profile data', () => {
-    const data = {
-      firstName: 'John',
-      lastName: 'Doe',
-      targetScore: 7.5,
-    }
-    expect(() => updateUserProfileSchema.parse(data)).not.toThrow()
-  })
-
-  it('should reject invalid target score', () => {
-    const data = { targetScore: 10 } // Max is 9
-    expect(() => updateUserProfileSchema.parse(data)).toThrow()
-  })
-})
-```
+- Utility functions in `lib/utils.ts`
+- Zod validation schemas in `lib/validation.ts`
+- Helper logic that doesn't depend on the database or browser.
 
 ---
 
-## Testing Best Practices
+## 🤖 Automation Testing (Playwright)
 
-### ✓ Do's
-- **Test behavior, not implementation** - Focus on "what does this do?" not "how does it do it?"
-- **Use descriptive test names** - Should read like documentation
-- **Keep tests focused** - One assertion per test when possible
-- **Mock external dependencies** - Database, APIs, file system
-- **Use beforeEach/afterEach** - For setup and cleanup
-- **Test edge cases** - Null values, empty arrays, boundary values
+E2E tests simulate a real user interaction. They visit pages, click buttons, and check if the UI updates correctly.
 
-### ✗ Don'ts
-- Don't test implementation details (private methods, internal state)
-- Don't create interdependent tests (each test should be independent)
-- Don't skip error cases
-- Don't test third-party libraries (trust they work)
-- Don't make tests too complex
+- **Location**: `tests/*.spec.ts`
+- **Framework**: [Playwright](https://playwright.dev/)
 
----
+### How to write an E2E Test
 
-## Coverage Goals
+Create a new file in the `tests/` folder, e.g., `tests/speaking.spec.ts`.
 
-| Type | Target |
-|------|--------|
-| Utilities & Helpers | 80%+ |
-| Business Logic | 70%+ |
-| Components | 60%+ |
-| Pages | 20%+ |
-
----
-
-## Example Test Files Provided
-
-1. **lib/utils.test.ts** - Comprehensive utility function tests
-   - Tests for: `cn`, `formatRelativeTime`, `getScoreColor`, `calculateNewStreak`, `calculateBandScore`, `getDifficultyColor`, `formatTime`
-   - Run with: `npm test lib/utils.test.ts`
-
----
-
-## Common Testing Patterns
-
-### Testing Async Functions
 ```typescript
-it('should fetch data', async () => {
-  const result = await fetchData()
-  expect(result).toBeDefined()
-})
+// tests/speaking.spec.ts
+import { test, expect } from "@playwright/test";
+
+test("User can visit speaking page", async ({ page }) => {
+  // 1. Visit the page
+  await page.goto("/speaking");
+
+  // 2. Interact (e.g., click a button)
+  await page.getByRole("button", { name: "Start Practice" }).click();
+
+  // 3. Assert (Check if expected text is visible)
+  await expect(page.getByText("Get Ready")).toBeVisible();
+});
 ```
 
-### Testing with Mocks
-```typescript
-import { vi } from 'vitest'
+### Useful Commands
 
-const mockFn = vi.fn()
-mockFn.mockResolvedValue({ success: true })
-// or
-mockFn.mockRejectedValue(new Error('Failed'))
-```
-
-### Testing Errors
-```typescript
-it('should throw on invalid input', () => {
-  expect(() => riskyFunction(null)).toThrow('Invalid input')
-})
-```
+- `npx playwright test --ui`: Opens an interactive UI mode to watch tests run.
+- `npx playwright codegen`: Opens a browser that records your clicks and generates test code for you!
 
 ---
 
-## Next Steps
+## 🔍 Debugging Tests
 
-1. ✓ Install testing dependencies
-2. ✓ Create vitest config files
-3. ✓ Run the example test: `npm test lib/utils.test.ts`
-4. Create tests for `lib/validation.ts`
-5. Create tests for `lib/actions/*.ts` (with mocks)
-6. Create tests for React components
-7. Aim for 60%+ overall coverage
+### Vitest
 
+Run with verbose output to see which specific test failed:
+
+```bash
+npx vitest run lib --reporter=verbose
+```
+
+### Playwright
+
+Turn on trace viewer to see screenshots and network calls for failed tests:
+
+```bash
+npx playwright test --trace on
+```

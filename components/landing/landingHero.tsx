@@ -5,6 +5,11 @@ import { useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { ArrowRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 export default function LandingHero() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -12,6 +17,14 @@ export default function LandingHero() {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLButtonElement>(null);
+
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById("features");
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -51,16 +64,31 @@ export default function LandingHero() {
         snap: { textContent: 1 },
         stagger: 0.2,
       });
+
+      // Fade out indicator on scroll
+      if (indicatorRef.current) {
+        gsap.to(indicatorRef.current, {
+          opacity: 0,
+          y: 20,
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "bottom center",
+            scrub: true,
+          },
+        });
+      }
     }, heroRef);
     return () => ctx.revert();
   }, []);
+
   return (
     <section
       ref={heroRef}
       className="relative min-h-screen flex items-center justify-center px-4 pt-20 overflow-hidden">
       {/* Floating Elements */}
-      <div className="absolute top-1/4 left-[10%] w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-xl animate-float" />
-      <div className="absolute bottom-1/4 right-[10%] w-32 h-32 bg-gradient-to-br from-amber-500/20 to-indigo-500/20 rounded-3xl blur-xl animate-float-delayed" />
+      <div className="absolute top-1/4 left-[10%] w-24 h-24 bg-linear-to-br from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-xl animate-float" />
+      <div className="absolute bottom-1/4 right-[10%] w-32 h-32 bg-linear-to-br from-amber-500/20 to-indigo-500/20 rounded-3xl blur-xl animate-float-delayed" />
       <div className="max-w-5xl mx-auto text-center relative z-10">
         {/* Title */}
         <h1 ref={titleRef} className="text-5xl md:text-7xl font-black mb-6 leading-tight">
@@ -122,9 +150,12 @@ export default function LandingHero() {
         </div>
 
         {/* Scroll indicator */}
-        <a href="#features" className="fixed bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronDownIcon className="w-8 h-8 text-indigo-500" />
-        </a>
+        <button
+          onClick={scrollToFeatures}
+          ref={indicatorRef}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-20 hover:text-indigo-400 transition-colors">
+          <ChevronDownIcon className="w-8 h-8 text-indigo-500 cursor-pointer" />
+        </button>
       </div>
     </section>
   );

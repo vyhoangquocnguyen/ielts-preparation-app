@@ -72,7 +72,7 @@ export default function LandingFeatures() {
     return () => ctx.revert();
   }, []);
   return (
-    <section ref={sectionRef} id="feature" className="py-24 px-4">
+    <section ref={sectionRef} id="features" className="py-24 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">Why Choose IELTS Prep AI?</h2>
