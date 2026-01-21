@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-};
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb", // Increased from default 1mb to support audio recordings
+    },
+  },
+} as const;
 
 export default nextConfig;
