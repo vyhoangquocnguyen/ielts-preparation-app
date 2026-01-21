@@ -21,7 +21,12 @@ export default async function Page({ searchParams }: Props) {
 
         {/* Content */}
         <section>
-          <Suspense fallback={"... loading"}>{/* <Analytics timeRange={timeRange} /> */}</Suspense>
+          <Suspense fallback={"... loading"}>{/* <Analytics timeRange={timeRange} /> */}
+            {/* Chart */}
+            {/* Streaks */}
+            {/* Best/Worst Skills */}
+            {/* History activities with feedback review */}
+          </Suspense>
         </section>
       </div>
     </div>

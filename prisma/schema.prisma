@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -38,7 +37,7 @@ model User{
   writingAttempts WritingAttempt[]
 
   // Bookmarks
-  bookmarks Booknark[]
+  bookmarks Bookmark[]
   analytics UserAnalytics[]
 
   // Indices
