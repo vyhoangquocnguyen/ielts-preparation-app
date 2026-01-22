@@ -1,20 +1,18 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-import { calculateNewStreak } from "../utils";
+import { calculateNewStreak, getAuthenticatedId } from "../utils";
 import { revalidatePath } from "next/cache";
 import { updateUserProfileSchema } from "../validation";
 
+
+
 // Get current user from database
 export async function getCurrentUser() {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  const dbUserId = await getAuthenticatedId();
   const user = await prisma.user.findUnique({
     where: {
-      clerkId: userId,
+      id: dbUserId,
     },
   });
   if (!user) {
@@ -24,11 +22,13 @@ export async function getCurrentUser() {
   // Update streak if needed
   const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
-
   if (newStreak !== user.currentStreak) {
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: { currentStreak: newStreak },
+      data: {
+        currentStreak: newStreak,
+        lastStudyDate: new Date(),
+      },
     });
     return updatedUser;
   }
@@ -37,90 +37,52 @@ export async function getCurrentUser() {
 }
 
 // Get dashboard statistics for a user
-export async function getDashboardStatistics(userId: string) {
+export async function getDashboardStatistics() {
+  const dbUserId = await getAuthenticatedId();
   // Get counts of completed exercise per module
-  const [listeningCount, readingCount, writingCount, speakingCount] = await Promise.all([
-    prisma.listeningAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-    prisma.readingAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-    prisma.writingAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-    prisma.speakingAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-  ]);
+  // Get counts and averages in parallel using the indexed dbUserId
+  const [
+    listeningCount,
+    readingCount,
+    writingCount,
+    speakingCount,
+    listeningAve,
+    readingAve,
+    writingAve,
+    speakingAve,
+    user,
+  ] = await Promise.all([
+    // Counts
+    prisma.listeningAttempt.count({ where: { userId: dbUserId, completed: true } }),
+    prisma.readingAttempt.count({ where: { userId: dbUserId, completed: true } }),
+    prisma.writingAttempt.count({ where: { userId: dbUserId, completed: true } }),
+    prisma.speakingAttempt.count({ where: { userId: dbUserId, completed: true } }),
 
-  // Get average score for each module
-  const [listeningAve, readingAve, writingAve, speakingAve] = await Promise.all([
+    // Averages
     prisma.listeningAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-      },
-      _avg: {
-        score: true,
-      },
+      where: { userId: dbUserId, completed: true },
+      _avg: { score: true },
     }),
     prisma.readingAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-      },
-      _avg: {
-        score: true,
-      },
+      where: { userId: dbUserId, completed: true },
+      _avg: { score: true },
     }),
     prisma.writingAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-        overallScore: {
-          not: null,
-        },
-      },
-      _avg: {
-        overallScore: true,
-      },
+      where: { userId: dbUserId, completed: true, overallScore: { not: null } },
+      _avg: { overallScore: true },
     }),
     prisma.speakingAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-        overallScore: {
-          not: null,
-        },
-      },
-      _avg: {
-        overallScore: true,
-      },
+      where: { userId: dbUserId, completed: true, overallScore: { not: null } },
+      _avg: { overallScore: true },
+    }),
+
+    // Study Time
+    prisma.user.findUnique({
+      where: { id: dbUserId },
+      select: { totalStudyTime: true },
     }),
   ]);
 
-  // Get user data for study time
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      totalStudyTime: true,
-    },
-  });
   return {
     exerciseCompleted: listeningCount + readingCount + writingCount + speakingCount,
     moduleCounts: {
@@ -130,23 +92,26 @@ export async function getDashboardStatistics(userId: string) {
       speaking: speakingCount,
     },
     averageScore: {
-      listening: listeningAve._avg.score,
-      reading: readingAve._avg.score,
-      writing: writingAve._avg.overallScore,
-      speaking: speakingAve._avg.overallScore,
+      listening: listeningAve._avg.score || 0,
+      reading: readingAve._avg.score || 0,
+      writing: writingAve._avg.overallScore || 0,
+      speaking: speakingAve._avg.overallScore || 0,
     },
-    totalStudyTime: user?.totalStudyTime,
+    totalStudyTime: user?.totalStudyTime || 0,
   };
 }
 
 // Get recent activity for a user
-export async function getRecentActivity(userId: string, limit: number = 5) {
+export async function getRecentActivity(limit: number = 5) {
+  const safeLimit = Math.floor(Number(limit)) || 5;
+  const dbUserId = await getAuthenticatedId();
   const [listening, reading, writing, speaking] = await Promise.all([
     prisma.listeningAttempt.findMany({
       where: {
-        userId,
+        userId: dbUserId,
         completed: true,
       },
+      take: safeLimit,
       select: {
         id: true,
         score: true,
@@ -160,11 +125,10 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
       orderBy: {
         createdAt: "desc",
       },
-      take: limit,
     }),
     prisma.readingAttempt.findMany({
       where: {
-        userId,
+        userId: dbUserId,
         completed: true,
       },
       select: {
@@ -180,11 +144,11 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
       orderBy: {
         createdAt: "desc",
       },
-      take: limit,
+      take: safeLimit,
     }),
     prisma.writingAttempt.findMany({
       where: {
-        userId,
+        userId: dbUserId,
         completed: true,
       },
       select: {
@@ -200,11 +164,11 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
       orderBy: {
         createdAt: "desc",
       },
-      take: limit,
+      take: safeLimit,
     }),
     prisma.speakingAttempt.findMany({
       where: {
-        userId,
+        userId: dbUserId,
         completed: true,
       },
       select: {
@@ -220,7 +184,7 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
       orderBy: {
         createdAt: "desc",
       },
-      take: limit,
+      take: safeLimit,
     }),
   ]);
   // Combine and format activities
@@ -255,7 +219,7 @@ export async function getRecentActivity(userId: string, limit: number = 5) {
     })),
   ];
   // Sort by date and take top N
-  return activities.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()).slice(0, limit);
+  return activities.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()).slice(0, safeLimit);
 }
 
 // Update User profile
@@ -265,35 +229,22 @@ export async function updateUserProfile(data: {
   targetScore?: number;
   studyGoal?: string;
 }) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+  const dbUserId = await getAuthenticatedId();
 
   // Validate input
   const validatedData = updateUserProfileSchema.parse(data);
 
-  // Get user
-  const user = await prisma.user.findUnique({
-    where: {
-      clerkId: userId,
-    },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
   // Update user
   await prisma.user.update({
     where: {
-      id: user.id,
+      id: dbUserId,
     },
     data: validatedData,
   });
 
   // Revalidate cache
   revalidatePath("/profile");
+  revalidatePath("/dashboard");
 
   return { success: true };
 }

@@ -1,9 +1,10 @@
-import { WebhookEvent } from "@clerk/nextjs/server";
+import { createClerkClient, WebhookEvent } from "@clerk/nextjs/server";
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
+  const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!CLERK_WEBHOOK_SECRET) {
@@ -51,18 +52,30 @@ export async function POST(req: Request) {
     }
 
     const email = email_addresses[0].email_address;
+
     try {
       // Create user in database
-      await prisma.user.create({
+      const newUser = await prisma.user.create({
         data: {
           clerkId: id,
           email: email,
           firstName: first_name || null,
           lastName: last_name || null,
           imgUrl: image_url || null,
+          role: "STUDENT",
+          plan: "FREE",
+        },
+      });
+      // 2. Sync DB ID back to Clerk Metadata
+      await clerkClient.users.updateUserMetadata(id, {
+        publicMetadata: {
+          dbUserId: newUser.id, // Matches your JWT template key
+          role: "STUDENT",
+          plan: "FREE",
         },
       });
       console.log(`User creaated: ${email_addresses[0].email_address}`);
+      return new Response("User Synced", { status: 200 });
     } catch (error) {
       console.error("Error creating user in database:", error);
       return new Response("Error: Could not create user in database", { status: 500 });
@@ -83,6 +96,8 @@ export async function POST(req: Request) {
           firstName: first_name || null,
           lastName: last_name || null,
           imgUrl: image_url || null,
+          role: "STUDENT",
+          plan: "FREE",
         },
       });
       console.log(`User updated: ${email_addresses[0].email_address}`);
