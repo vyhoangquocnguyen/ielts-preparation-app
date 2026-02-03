@@ -111,20 +111,14 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       throw new Error("Validation error");
     }
 
-    // Fetch Resource in parallel
-    const [exercise, user] = await Promise.all([
-      prisma.listeningExercise.findUnique({
-        where: { id: validatedData.exerciseId },
-        include: {
-          questions: true,
-        },
-      }),
-      prisma.user.findUnique({
-        where: { id: dbUserId },
-        select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
-      }),
-    ]);
-    if (!exercise || !user) throw new Error("Resources not found");
+    // Fetch exercise
+    const exercise = await prisma.listeningExercise.findUnique({
+      where: { id: validatedData.exerciseId },
+      include: {
+        questions: true,
+      },
+    });
+    if (!exercise) throw new Error("Exercise not found");
 
     // 6. Question Integrity Check
     if (validatedData.answers.length !== exercise.questions.length) {
@@ -158,14 +152,21 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     const bandScore = calculateBandScore(correctCount, totalQuestions);
 
     //   9. Save to database with transaction to ensure atomicity
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0);
-    const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
-
     const attemptId = await prisma.$transaction(async (tx) => {
+      // Fetch user with row lock to prevent race conditions
+      const user = await tx.user.findUnique({
+        where: { id: dbUserId },
+        select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
+      });
+      if (!user) throw new Error("User not found");
+
+      // Calculate time-based values inside transaction
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      const startOfMonth = new Date(year, month - 1, 1);
+      const endOfMonth = new Date(year, month, 0);
+      const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
       // Create the attempt
       const attempt = await tx.listeningAttempt.create({
         data: {
