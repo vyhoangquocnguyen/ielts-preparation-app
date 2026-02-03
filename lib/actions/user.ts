@@ -1,10 +1,10 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { calculateNewStreak, getAuthenticatedId } from "../utils";
+import { calculateNewStreak } from "../utils";
 import { revalidatePath } from "next/cache";
 import { updateUserProfileSchema } from "../validation";
-
+import { getAuthenticatedId } from "./auth";
 
 
 // Get current user from database
@@ -103,7 +103,7 @@ export async function getDashboardStatistics() {
 
 // Get recent activity for a user
 export async function getRecentActivity(limit: number = 5) {
-  const safeLimit = Math.floor(Number(limit)) || 5;
+  const safeLimit = Math.max(1, Math.min(Math.floor(limit) || 5, 100));
   const dbUserId = await getAuthenticatedId();
   const [listening, reading, writing, speaking] = await Promise.all([
     prisma.listeningAttempt.findMany({

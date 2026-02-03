@@ -6,33 +6,32 @@ import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
 import { calculateBandScore, calculateNewStreak } from "../utils";
 import { revalidatePath } from "next/cache";
+import { getAuthenticatedId } from "./auth";
 
 /***** Get listening exercises, fetch all with questions *****/
 export async function getListeningExercises(filter?: { difficulty?: string; category?: string }) {
   // 1. Authenticate user
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-  // 2. Validate difficulty
-  if (filter?.difficulty) {
-    const validDifficulties = ["easy", "medium", "hard"];
-    if (!validDifficulties.includes(filter.difficulty)) {
-      throw new Error("Invalid difficulty level");
-    }
-  }
-  if (filter?.category) {
-    const validCategories = ["academic", "general"]; // academic or general
-    if (!validCategories.includes(filter.category)) {
-      throw new Error("Invalid category");
-    }
-  }
-  // 2. Build database query
   try {
+    await getAuthenticatedId();
+
+    // 2. Validate difficulty
+    if (filter?.difficulty) {
+      const validDifficulties = ["easy", "medium", "hard"];
+      if (!validDifficulties.includes(filter.difficulty)) {
+        throw new Error("Invalid difficulty level");
+      }
+    }
+    if (filter?.category) {
+      const validCategories = ["academic", "general"]; // academic or general
+      if (!validCategories.includes(filter.category)) {
+        throw new Error("Invalid category");
+      }
+    }
+    // 2. Build database query
     const where = {
       isPublished: true,
-      difficulty: filter?.difficulty,
-      category: filter?.category,
+      ...(filter?.difficulty && { difficulty: filter.difficulty }),
+      ...(filter?.category && { category: filter.category }),
     };
     // 3. Fetch exercises
     const exercises = await prisma.listeningExercise.findMany({
@@ -63,8 +62,7 @@ export async function getListeningExercises(filter?: { difficulty?: string; cate
 export async function getListeningExerciseById(exerciseId: string) {
   try {
     // 1. Authenticate user
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    await getAuthenticatedId();
 
     // 2. Validate id
     if (!exerciseId || typeof exerciseId !== "string") {
@@ -97,12 +95,11 @@ export async function getListeningExerciseById(exerciseId: string) {
 export async function submitListeningAnswers(data: SubmitListeningInput) {
   try {
     // 1. Authenticate user
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (!user) throw new Error("User not found");
+    //Get dbUserId from clerk metadata
+    const dbUserId = await getAuthenticatedId();
+    if (!dbUserId) throw new Error("User Database ID not found");
 
-    // 2. Validate exerciseId
+    // Validate exerciseId
     let validatedData;
     try {
       validatedData = submitListeningSchema.parse(data);
@@ -114,24 +111,26 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       throw new Error("Validation error");
     }
 
-    // 3. Fetch exercise
-    const exercise = await prisma.listeningExercise.findUnique({
-      where: { id: validatedData.exerciseId },
-      include: {
-        questions: true,
-      },
-    });
-    // 4. Handle not found
-    if (!exercise) {
-      throw new Error("Exercise not found");
-    }
+    // Fetch Resource in parallel
+    const [exercise, user] = await Promise.all([
+      prisma.listeningExercise.findUnique({
+        where: { id: validatedData.exerciseId },
+        include: {
+          questions: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: dbUserId },
+        select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
+      }),
+    ]);
+    if (!exercise || !user) throw new Error("Resources not found");
 
-    // 5. Check if user answered the right number of questions
+    // 6. Question Integrity Check
     if (validatedData.answers.length !== exercise.questions.length) {
       throw new Error(`Expected ${exercise.questions.length} answers, but received ${validatedData.answers.length}`);
     }
 
-    // 6. Check all questions ids are valid
     const validQuestionIds = new Set(exercise.questions.map((q) => q.id));
     for (const answer of validatedData.answers) {
       if (!validQuestionIds.has(answer.questionId)) {
@@ -141,101 +140,96 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
 
     // 7. Convert to Record format
     const answersRecord: Record<string, string> = {};
-    for (const answer of validatedData.answers) {
-      answersRecord[answer.questionId] = answer.answer;
-    }
+    validatedData.answers.forEach((a) => (answersRecord[a.questionId] = a.answer));
 
     // Check answers
     let correctCount = 0;
     const totalQuestions = exercise.questions.length;
 
     exercise.questions.forEach((question) => {
-      const userAnswer = answersRecord[question.id];
-      const correctAnswer = question.correctAnswer;
-
-      if (userAnswer && correctAnswer) {
-        const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-        const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
-
-        if (normalizedUserAnswer === normalizedCorrectAnswer) {
-          correctCount++;
-        }
+      const userAnswer = answersRecord[question.id]?.trim().toLowerCase();
+      const correctAnswer = question.correctAnswer?.trim().toLowerCase();
+      if (userAnswer && correctAnswer && userAnswer === correctAnswer) {
+        correctCount++;
       }
     });
 
     //   8. Calculate band score
     const bandScore = calculateBandScore(correctCount, totalQuestions);
 
-    //   9. Save to database
-    const attempt = await prisma.listeningAttempt.create({
-      data: {
-        userId: user.id,
-        exerciseId: exercise.id,
-        answers: answersRecord,
-        score: bandScore,
-        correctCount,
-        totalQuestions,
-        timeSpent: validatedData.timeSpent,
-        completed: true,
-      },
-    });
-
-    //   10. Update user stats & analytics
+    //   9. Save to database with transaction to ensure atomicity
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0);
-
-    // Recalculate monthly average for Listening
-    const monthlyStats = await prisma.listeningAttempt.aggregate({
-      where: {
-        userId: user.id,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-      },
-      _avg: { score: true },
-    });
-
-    const realAverage = monthlyStats._avg.score || bandScore;
-
-    // Update Analytics
-    await prisma.userAnalytics.upsert({
-      where: {
-        userId_month_year: { userId: user.id, month, year },
-      },
-      update: {
-        exercisesDone: { increment: 1 },
-        totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-        listeningAvg: realAverage,
-      },
-      create: {
-        userId: user.id,
-        month,
-        year,
-        listeningAvg: realAverage,
-        exercisesDone: 1,
-        totalStudyTime: Math.round(validatedData.timeSpent / 60),
-      },
-    });
-
-    // Update User Streak & Stats
     const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastStudyDate: now,
-        totalStudyTime: {
-          increment: Math.round(validatedData.timeSpent / 60),
+    const attemptId = await prisma.$transaction(async (tx) => {
+      // Create the attempt
+      const attempt = await tx.listeningAttempt.create({
+        data: {
+          userId: dbUserId,
+          exerciseId: exercise.id,
+          answers: answersRecord,
+          score: bandScore,
+          correctCount,
+          totalQuestions,
+          timeSpent: validatedData.timeSpent,
+          completed: true,
         },
-        currentStreak: newStreak,
-        longestStreak: Math.max(newStreak, user.longestStreak || 0),
-      },
+      });
+
+      // Recalculate monthly average for Listening within transaction
+      const monthlyStats = await tx.listeningAttempt.aggregate({
+        where: {
+          userId: dbUserId,
+          createdAt: { gte: startOfMonth, lte: endOfMonth },
+        },
+        _avg: { score: true },
+      });
+
+      const realAverage = monthlyStats._avg.score || bandScore;
+
+      // Update Analytics
+      await tx.userAnalytics.upsert({
+        where: {
+          userId_month_year: { userId: dbUserId, month, year },
+        },
+        update: {
+          exercisesDone: { increment: 1 },
+          totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
+          listeningAvg: realAverage,
+        },
+        create: {
+          userId: dbUserId,
+          month,
+          year,
+          listeningAvg: realAverage,
+          exercisesDone: 1,
+          totalStudyTime: Math.round(validatedData.timeSpent / 60),
+        },
+      });
+
+      // Update User Streak & Stats
+      await tx.user.update({
+        where: { id: dbUserId },
+        data: {
+          lastStudyDate: now,
+          totalStudyTime: {
+            increment: Math.round(validatedData.timeSpent / 60),
+          },
+          currentStreak: newStreak,
+          longestStreak: Math.max(newStreak, user.longestStreak || 0),
+        },
+      });
+
+      return attempt.id;
     });
 
-    //   11. Revalidate & return
+    //   10. Revalidate & return
     revalidatePath("/dashboard");
-    return { success: true, data: attempt.id };
+    return { success: true, data: attemptId };
   } catch (error) {
     console.error("Error submitting answers:", error);
     return { success: false, error: error instanceof Error ? error.message : "Failed to submit answers" };
@@ -246,22 +240,15 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
 export async function getListeningAttempt(attemptId: string) {
   try {
     // 1. Authenticate user
-    const { userId } = await auth();
-    if (!userId) return { success: false, error: "Unauthorized" };
-
-    const user = await prisma.user.findUnique({
-      where: {
-        clerkId: userId,
-      },
-    });
-    if (!user) return { success: false, error: "User not found" };
+    const dbUserId = await getAuthenticatedId();
+    if (!dbUserId) return { success: false, error: "User Database ID not found" };
 
     // 2. Validate id
     if (!attemptId || typeof attemptId !== "string") return { success: false, error: "Invalid attempt ID" };
 
     // 3. Fetch attempt
     const attempt = await prisma.listeningAttempt.findUnique({
-      where: { id: attemptId, userId: user.id },
+      where: { id: attemptId, userId: dbUserId },
       include: {
         exercise: {
           include: {

@@ -1,22 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-/**
- * Helper to get the authenticated Database ID from the JWT.
- * This prevents repeated Clerk-to-Prisma lookups.
- */
-
-export async function getAuthenticatedId() {
-  const { sessionClaims } = await auth();
-  const dbUserId = sessionClaims?.metadata.dbUserId;
-
-  if (!dbUserId) {
-    throw new Error("Unauthorized: No Database ID found in session");
-  }
-
-  return dbUserId;
-}
 
 
 export async function transcribeAudio(audioUrl: string): Promise<string> {

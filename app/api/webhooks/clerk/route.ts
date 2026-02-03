@@ -74,7 +74,7 @@ export async function POST(req: Request) {
           plan: "FREE",
         },
       });
-      console.log(`User creaated: ${email_addresses[0].email_address}`);
+      console.log(`User created: ${email_addresses[0].email_address}`);
       return new Response("User Synced", { status: 200 });
     } catch (error) {
       console.error("Error creating user in database:", error);
