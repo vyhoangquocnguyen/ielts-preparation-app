@@ -1,39 +1,41 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateBandScore, calculateNewStreak } from "../utils";
+import { calculateBandScore, calculateNewStreak, getMonthTimeValues } from "../utils";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedId } from "./auth";
 
-/***** Get listening exercises, fetch all with questions *****/
+/**
+ * Get all listening exercises with optional filtering
+ * @param filter - Optional filters for difficulty and category
+ * @returns Success response with exercises array or error
+ */
 export async function getListeningExercises(filter?: { difficulty?: string; category?: string }) {
   // 1. Authenticate user
   try {
     await getAuthenticatedId();
 
     // 2. Validate difficulty
-    if (filter?.difficulty) {
-      const validDifficulties = ["easy", "medium", "hard"];
-      if (!validDifficulties.includes(filter.difficulty)) {
-        throw new Error("Invalid difficulty level");
+    const validations = {
+      difficulty: ["easy", "medium", "hard"],
+      category: ["academic", "general"],
+    } as const;
+
+    for (const [key, validOptions] of Object.entries(validations)) {
+      const value = filter?.[key as keyof typeof filter];
+      if (value && !(validOptions as readonly string[]).includes(value)) {
+        throw new Error(`Invalid ${key}`);
       }
     }
-    if (filter?.category) {
-      const validCategories = ["academic", "general"]; // academic or general
-      if (!validCategories.includes(filter.category)) {
-        throw new Error("Invalid category");
-      }
-    }
-    // 2. Build database query
+    // 3. Build database query
     const where = {
       isPublished: true,
-      ...(filter?.difficulty && { difficulty: filter.difficulty }),
-      ...(filter?.category && { category: filter.category }),
+      ...(filter?.difficulty !== undefined && { difficulty: filter.difficulty }),
+      ...(filter?.category !== undefined && { category: filter.category }),
     };
-    // 3. Fetch exercises
+    // 4. Fetch exercises
     const exercises = await prisma.listeningExercise.findMany({
       where,
       select: {
@@ -58,7 +60,11 @@ export async function getListeningExercises(filter?: { difficulty?: string; cate
   }
 }
 
-/***** Get listening exercise by exerciseId *****/
+/**
+ * Get a single listening exercise by ID
+ * @param exerciseId - Exercise ID
+ * @returns Success response with exercise and questions data, or error
+ */
 export async function getListeningExerciseById(exerciseId: string) {
   try {
     // 1. Authenticate user
@@ -91,7 +97,11 @@ export async function getListeningExerciseById(exerciseId: string) {
   }
 }
 
-/**** Submit and score listening exercise ****/
+/**
+ * Submit and score a listening exercise attempt
+ * @param data - Listening submission data including answers and time spent
+ * @returns Success response with attempt ID or error
+ */
 export async function submitListeningAnswers(data: SubmitListeningInput) {
   try {
     // 1. Authenticate user
@@ -99,8 +109,8 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     const dbUserId = await getAuthenticatedId();
     if (!dbUserId) throw new Error("User Database ID not found");
 
-    // Validate exerciseId
-    let validatedData;
+    // 2. Validate input data
+    let validatedData: SubmitListeningInput;
     try {
       validatedData = submitListeningSchema.parse(data);
     } catch (error) {
@@ -111,7 +121,7 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       throw new Error("Validation error");
     }
 
-    // Fetch exercise
+    // 3. Fetch exercise
     const exercise = await prisma.listeningExercise.findUnique({
       where: { id: validatedData.exerciseId },
       include: {
@@ -120,7 +130,7 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     });
     if (!exercise) throw new Error("Exercise not found");
 
-    // 6. Question Integrity Check
+    // 4. Question integrity check
     if (validatedData.answers.length !== exercise.questions.length) {
       throw new Error(`Expected ${exercise.questions.length} answers, but received ${validatedData.answers.length}`);
     }
@@ -132,11 +142,11 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       }
     }
 
-    // 7. Convert to Record format
+    // 5. Convert to Record format
     const answersRecord: Record<string, string> = {};
     validatedData.answers.forEach((a) => (answersRecord[a.questionId] = a.answer));
 
-    // Check answers
+    // 6. Check answers
     let correctCount = 0;
     const totalQuestions = exercise.questions.length;
 
@@ -148,10 +158,10 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       }
     });
 
-    //   8. Calculate band score
+    // 7. Calculate band score
     const bandScore = calculateBandScore(correctCount, totalQuestions);
 
-    //   9. Save to database with transaction to ensure atomicity
+    // 8. Save to database with transaction to ensure atomicity
     const attemptId = await prisma.$transaction(async (tx) => {
       // Fetch user with row lock to prevent race conditions
       const user = await tx.user.findUnique({
@@ -162,10 +172,7 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
 
       // Calculate time-based values inside transaction
       const now = new Date();
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
-      const startOfMonth = new Date(year, month - 1, 1);
-      const endOfMonth = new Date(year, month, 0);
+      const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
       // Create the attempt
       const attempt = await tx.listeningAttempt.create({
@@ -228,7 +235,7 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       return attempt.id;
     });
 
-    //   10. Revalidate & return
+    // 9. Revalidate & return
     revalidatePath("/dashboard");
     return { success: true, data: attemptId };
   } catch (error) {
@@ -237,7 +244,11 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
   }
 }
 
-/**** Get listening Attempt    *****/
+/**
+ * Get listening attempt for review
+ * @param attemptId - Listening attempt ID
+ * @returns Success response with attempt, exercise, and questions data, or error
+ */
 export async function getListeningAttempt(attemptId: string) {
   try {
     // 1. Authenticate user

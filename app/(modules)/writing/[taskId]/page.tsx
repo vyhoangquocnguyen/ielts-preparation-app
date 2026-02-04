@@ -4,7 +4,7 @@ import WritingEditor from "@/components/module/writing/writingEditor";
 
 export async function generateMetadata({ params }: { params: Promise<{ taskId: string }> }) {
   const taskId = (await params).taskId;
-  const task = await getWritingTaskById(taskId);
+  const { data: task } = await getWritingTaskById(taskId);
   if (!task) {
     return { title: "Task not found" };
   }
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ taskId: s
 
 export default async function WritingTaskPage({ params }: { params: Promise<{ taskId: string }> }) {
   const taskId = (await params).taskId;
-  const task = await getWritingTaskById(taskId);
+  const { data: task } = await getWritingTaskById(taskId);
   if (!task) {
     notFound();
   }

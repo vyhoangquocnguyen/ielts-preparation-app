@@ -11,7 +11,7 @@ export const metadata = {
 
 const SpeakingPracticePage = async ({ searchParams }: { searchParams: Promise<{ part?: string }> }) => {
   const resolvedParams = await searchParams;
-  const { success, exercises } = await getSpeakingExercises(resolvedParams);
+  const { success, data: exercises } = await getSpeakingExercises(resolvedParams);
 
   if (!success || !exercises) {
     return (
