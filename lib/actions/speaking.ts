@@ -173,10 +173,10 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   /*** SAVE TO DB WITH TRANSACTION ***/
   const attemptId = await prisma.$transaction(async (tx) => {
     // Fetch user with row lock to prevent race conditions
-    const user = await tx.user.findUnique({
-      where: { id: dbUserId },
-      select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
-    });
+    const [user] = await tx.$queryRaw<
+      { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
+    >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
+
     if (!user) throw new Error("User not found");
 
     // Calculate time-based values inside transaction
@@ -272,9 +272,10 @@ export async function getSpeakingFeedback(attemptId: string) {
     if (!dbUserId) {
       return { success: false, error: "User Database ID not found" };
     }
-    const attempt = await prisma.speakingAttempt.findUnique({
+    const attempt = await prisma.speakingAttempt.findFirst({
       where: {
         id: attemptId,
+        userId: dbUserId,
       },
       include: {
         exercise: true,
@@ -282,9 +283,6 @@ export async function getSpeakingFeedback(attemptId: string) {
     });
     if (!attempt) {
       return { success: false, error: "Attempt not found" };
-    }
-    if (attempt.userId !== dbUserId) {
-      return { success: false, error: "Unauthorized" };
     }
     return { success: true, data: attempt };
   } catch (error) {

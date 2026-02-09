@@ -125,7 +125,7 @@ export async function submitWritingTask(data: SubmitWritingInput) {
 
   const feedback = await generateWritingAIFeedback(task.taskType, task.prompt, wordCount, content);
 
-  // Save to database with transaction to ensure atomicity
+  // 8. Save to database with transaction to ensure atomicity
   const attemptId = await prisma.$transaction(async (tx) => {
     // Fetch user with row lock to prevent race conditions
     const user = await tx.user.findUnique({

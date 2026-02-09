@@ -12,7 +12,6 @@ import Timer from "./timer";
 import { toast } from "sonner";
 import QuestionsPanel from "./questionsPanel";
 
-import { ListeningExerciseWithQuestions, ReadingExerciseWithQuestions } from "@/types";
 import AudioPlayer from "./listening/audioPlayer";
 
 interface ExerciseProps {
@@ -68,7 +67,7 @@ export function ExerciseLayout({ exercise, moduleType }: ExerciseProps) {
 
   const allQuestionsAnswered = useMemo(
     () => exercise.questions.every((q) => answers[q.id] && answers[q.id].trim() !== ""),
-    [exercise.questions, answers]
+    [exercise.questions, answers],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -109,7 +108,7 @@ export function ExerciseLayout({ exercise, moduleType }: ExerciseProps) {
           setIsSubmitting(false);
           return err instanceof Error ? err.message : "Failed to submit answers. Please try again.";
         },
-      }
+      },
     );
   }, [allQuestionsAnswered, exercise.id, exercise.questions, answers, timeSpent, router, moduleType]);
 
@@ -192,14 +191,13 @@ export function ExerciseLayout({ exercise, moduleType }: ExerciseProps) {
           {/* Submit Button */}
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <Button onClick={handleSubmit} disabled={isSubmitting} size="lg" className="w-full">
-              {isSubmitting ? (
+              {isSubmitting ?
                 "Submitting..."
-              ) : (
-                <>
+              : <>
                   <PaperAirplaneIcon className="w-4 h-4 mr-2" />
                   Submit Answers
                 </>
-              )}
+              }
             </Button>
             <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
               Make sure you&apos;ve answered all questions before submitting

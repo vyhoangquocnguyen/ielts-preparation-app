@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ListeningAttemptWithExercise, ModuleType, ReadingAttemptWithExercise } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon, ArrowPathIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
@@ -103,11 +102,9 @@ export default function ReviewLayout({ attempt, moduleType }: ReviewLayoutProps)
               }`}>
               <CardHeader>
                 <CardTitle className="flex items-start gap-3 text-lg">
-                  {isCorrect ? (
+                  {isCorrect ?
                     <CheckCircleIcon className="w-6 h-6 text-green-500 dark:text-green-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <XCircleIcon className="w-6 h-6 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />
-                  )}
+                  : <XCircleIcon className="w-6 h-6 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />}
                   <div className="flex-1">
                     <span className="text-primary mr-2">Q{question.questionNumber}.</span>
                   </div>

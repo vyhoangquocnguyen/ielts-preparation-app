@@ -13,7 +13,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/lib/utils";
 import FeedbackDisplay from "@/components/module/shared/feedbackDisplay";
-import { WritingFeedbackDetailed } from "@/types";
 
 type Props = {
   params: Promise<{ taskId: string; attemptId: string }>;

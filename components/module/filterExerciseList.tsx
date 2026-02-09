@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { BookOpenIcon } from "lucide-react";
 import ExerciseCard from "./exerciseCard";
-import { BaseExercise, ModuleType } from "@/types";
 
 interface FilterProps<T extends BaseExercise> {
   exercises: T[];
@@ -125,19 +124,18 @@ const FilterableExerciseList = <T extends BaseExercise>({ exercises, moduleType 
       <div className="text-sm text-muted-foreground">
         Showing {filteredExercise.length} {filteredExercise.length === 1 ? "exercise" : "exercises"}
       </div>
-      {filteredExercise.length === 0 ? (
+      {filteredExercise.length === 0 ?
         <div className="text-center py-12">
           <BookOpenIcon className="w-12 h-12 mx-auto text-gray-400" />
           <h3 className="mt-2 text-sm font-semibold">No exercises found</h3>
           <p className="mt-1 text-sm text-gray-500">Try selecting a different filter.</p>
         </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      : <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredExercise.map((exercise) => (
             <ExerciseCard key={exercise.id} exercise={exercise} moduleType={moduleType} />
           ))}
         </div>
-      )}
+      }
     </div>
   );
 };

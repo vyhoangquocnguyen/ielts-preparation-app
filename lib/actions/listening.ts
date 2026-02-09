@@ -259,7 +259,7 @@ export async function getListeningAttempt(attemptId: string) {
     if (!attemptId || typeof attemptId !== "string") return { success: false, error: "Invalid attempt ID" };
 
     // 3. Fetch attempt
-    const attempt = await prisma.listeningAttempt.findUnique({
+    const attempt = await prisma.listeningAttempt.findFirst({
       where: { id: attemptId, userId: dbUserId },
       include: {
         exercise: {

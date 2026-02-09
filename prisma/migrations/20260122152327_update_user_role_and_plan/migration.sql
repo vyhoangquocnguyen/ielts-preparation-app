@@ -1,45 +1,26 @@
-/*
-  Warnings:
-
-  - You are about to drop the `Booknark` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('STUDENT', 'TEACHER', 'ADMIN');
 
 -- CreateEnum
 CREATE TYPE "Plan" AS ENUM ('FREE', 'PRO', 'PREMIUM');
 
--- DropForeignKey
-ALTER TABLE "Booknark" DROP CONSTRAINT "Booknark_userId_fkey";
-
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN     "plan" "Plan" NOT NULL DEFAULT 'FREE',
 ADD COLUMN     "role" "UserRole" NOT NULL DEFAULT 'STUDENT';
 
--- DropTable
-DROP TABLE "Booknark";
+-- Rename Table (Preserving Data)
+ALTER TABLE "Booknark" RENAME TO "Bookmark";
 
--- CreateTable
-CREATE TABLE "Bookmark" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "moduleType" TEXT NOT NULL,
-    "exerciseId" TEXT NOT NULL,
-    "note" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- Rename Constraints & Indices
+ALTER TABLE "Bookmark" RENAME CONSTRAINT "Booknark_pkey" TO "Bookmark_pkey";
+ALTER TABLE "Bookmark" RENAME CONSTRAINT "Booknark_userId_fkey" TO "Bookmark_userId_fkey";
 
-    CONSTRAINT "Bookmark_pkey" PRIMARY KEY ("id")
-);
-
--- CreateIndex
+-- Create additional indices/constraints if they don't exist
+-- Note: Prisma's new schema includes more indices than the old one likely had
 CREATE INDEX "Bookmark_userId_idx" ON "Bookmark"("userId");
-
--- CreateIndex
 CREATE INDEX "Bookmark_moduleType_idx" ON "Bookmark"("moduleType");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Bookmark_userId_moduleType_exerciseId_key" ON "Bookmark"("userId", "moduleType", "exerciseId");
 
--- AddForeignKey
+-- Ensure Foreign Key is updated to CASCADE if it wasn't
+ALTER TABLE "Bookmark" DROP CONSTRAINT "Bookmark_userId_fkey";
 ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

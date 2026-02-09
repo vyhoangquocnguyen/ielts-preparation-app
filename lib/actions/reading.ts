@@ -139,7 +139,9 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
 
     // 5. Convert to Record format
     const answersRecord: Record<string, string> = {};
-    validatedData.answers.forEach((a) => (answersRecord[a.questionId] = a.answer));
+    validatedData.answers.forEach((a) => {
+      answersRecord[a.questionId] = a.answer;
+    });
     // 6. Check answers
     let correctCount = 0;
     const totalQuestions = exercise.questions.length;
@@ -158,10 +160,10 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
     // 8. Save to database with transaction to ensure atomicity
     const attemptId = await prisma.$transaction(async (tx) => {
       // Fetch user with row lock to prevent race conditions
-      const user = await tx.user.findUnique({
-        where: { id: dbUserId },
-        select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
-      });
+      const [user] = await tx.$queryRaw<
+        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
+
       if (!user) throw new Error("User not found");
 
       // Calculate time-based values inside transaction
@@ -254,7 +256,7 @@ export async function getReadingAttempt(attemptId: string) {
     if (!attemptId || typeof attemptId !== "string") return { success: false, error: "Invalid attempt ID" };
 
     // 3. Fetch attempt
-    const attempt = await prisma.readingAttempt.findUnique({
+    const attempt = await prisma.readingAttempt.findFirst({
       where: {
         id: attemptId,
         userId: dbUserId,

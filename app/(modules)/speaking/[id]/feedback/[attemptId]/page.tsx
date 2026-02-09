@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSpeakingFeedback } from "@/lib/actions/speaking";
 import { formatTime } from "@/lib/utils";
-import { SpeakingFeedbackDetailed } from "@/types";
 import {
   ArrowLeftCircleIcon,
   ChatBubbleLeftEllipsisIcon,

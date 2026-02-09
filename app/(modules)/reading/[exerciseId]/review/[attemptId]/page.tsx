@@ -1,7 +1,6 @@
 import { getReadingAttempt } from "@/lib/actions/reading";
 import ReviewLayout from "@/components/module/reviewLayout";
 import { redirect } from "next/navigation";
-import { ReadingAttemptWithExercise } from "@/types";
 
 type Props = {
   params: Promise<{
