@@ -3,7 +3,7 @@ export {};
 declare global {
   interface CustomJwtSessionClaims {
     metadata: {
-      plan?: "free" | "pro" | "premium";
+      plan?: "FREE" | "PRO" | "PREMIUM";
       role?: "STUDENT" | "TEACHER" | "ADMIN";
       dbUserId?: string;
     };
