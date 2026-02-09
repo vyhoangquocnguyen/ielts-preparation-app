@@ -144,7 +144,9 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
 
     // 5. Convert to Record format
     const answersRecord: Record<string, string> = {};
-    validatedData.answers.forEach((a) => (answersRecord[a.questionId] = a.answer));
+    validatedData.answers.forEach((a) => {
+      answersRecord[a.questionId] = a.answer;
+    });
 
     // 6. Check answers
     let correctCount = 0;
