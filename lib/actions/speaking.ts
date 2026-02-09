@@ -206,7 +206,7 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
       _avg: { overallScore: true },
       _count: { id: true },
     });
-    const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+    const realAverage = monthlyStats._avg.overallScore ?? feedback.overallScore;
 
     // Update Analytics
     await tx.userAnalytics.upsert({
