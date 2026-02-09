@@ -6,10 +6,10 @@ const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)", "/", "
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware(async (auth, request) => {
-  const { userId, sessionClaims } = await auth();
+  const { userId, sessionClaims, redirectToSignIn } = await auth();
   if (isPublicRoute(request)) return NextResponse.next();
 
-  if (!userId) return (await auth()).redirectToSignIn();
+  if (!userId) return redirectToSignIn({ returnBackUrl: request.url });
 
   // Instant role check using the optimized JWT
   const userRole = sessionClaims?.metadata?.role;
