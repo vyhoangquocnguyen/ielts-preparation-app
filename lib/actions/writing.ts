@@ -98,11 +98,7 @@ export async function getWritingTaskById(taskId: string) {
  * @param data - Writing submission data including content and word count
  * @returns Success response with attempt ID or error
  */
-export async function submitWritingTask(data: SubmitWritingInput): Promise<{
-  success: boolean;
-  data?: string;
-  error?: string;
-}> {
+export async function submitWritingTask(data: SubmitWritingInput) {
   // Validate input format first
   let validatedData: SubmitWritingInput;
   try {
@@ -205,7 +201,7 @@ export async function submitWritingTask(data: SubmitWritingInput): Promise<{
       },
     });
 
-    return result.id;
+    return { id: result.id };
   });
   revalidatePath("/dashboard");
   revalidatePath("/writing");
@@ -227,7 +223,7 @@ export async function getWritingAttempt(attemptId: string) {
     if (!attemptId || typeof attemptId !== "string") throw new Error("Invalid attempt ID");
 
     // 3. Fetch attempt
-    const attempt = await prisma.writingAttempt.findUnique({
+    const attempt = await prisma.writingAttempt.findFirst({
       where: { id: attemptId, userId: dbUserId },
       include: {
         task: true,
