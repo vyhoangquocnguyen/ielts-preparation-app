@@ -33,8 +33,10 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
     }
     if (duration < 10) {
       setError("Please record for at least 10 seconds");
-      console.log(duration);
-      return;
+     if (duration < 10) {
+       setError("Please record for at least 10 seconds");
+       return;
+     }
     }
     setIsSubmitting(true);
     setError(null);
