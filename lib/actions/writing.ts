@@ -1,11 +1,11 @@
 "use server";
 import prisma from "../prisma";
-import { generateWritingAIFeedback } from "../geminiAi";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { SubmitWritingInput, submitWritingSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateNewStreak, getMonthTimeValues } from "../utils";
 import { getAuthenticatedId } from "./auth";
+import { processWritingFeedback } from "../workers";
 
 /**
  * Get all writing tasks with optional filtering
@@ -123,90 +123,27 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   if (!dbUserId) throw new Error("User Database ID not found");
   if (!task) throw new Error("Task not found");
 
-  const feedback = await generateWritingAIFeedback(task.taskType, task.prompt, wordCount, content);
-
-  // 8. Save to database with transaction to ensure atomicity
-  const attemptId = await prisma.$transaction(async (tx) => {
-    // Fetch user with row lock to prevent race conditions
-    const user = await tx.user.findUnique({
-      where: { id: dbUserId },
-      select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
-    });
-    if (!user) throw new Error("User not found");
-
-    // Calculate time-based values inside transaction
-    const now = new Date();
-    const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
-    const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
-
-    // Create the attempt
-    const result = await tx.writingAttempt.create({
-      data: {
-        userId: dbUserId,
-        taskId,
-        content,
-        wordCount,
-        overallScore: feedback.overallScore,
-        feedback: feedback,
-        timeSpent,
-        completed: true,
-      },
-    });
-
-    // Recalculate monthly average for Writing within transaction
-    const monthlyStats = await tx.writingAttempt.aggregate({
-      where: {
-        userId: dbUserId,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-      },
-      _avg: { overallScore: true },
-      _count: { id: true },
-    });
-    const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
-
-    // Update Analytics
-    await tx.userAnalytics.upsert({
-      where: {
-        userId_month_year: {
-          userId: dbUserId,
-          month,
-          year,
-        },
-      },
-      update: {
-        exercisesDone: { increment: 1 },
-        totalStudyTime: { increment: Math.round(timeSpent / 60) },
-        writingAvg: realAverage,
-      },
-      create: {
-        userId: dbUserId,
-        month,
-        year,
-        writingAvg: realAverage,
-        exercisesDone: 1,
-        totalStudyTime: Math.round(timeSpent / 60),
-      },
-    });
-
-    // Update User Streak & Stats
-    await tx.user.update({
-      where: { id: dbUserId },
-      data: {
-        totalStudyTime: {
-          increment: Math.round(timeSpent / 60),
-        },
-        lastStudyDate: now,
-        currentStreak: newStreak,
-        longestStreak: Math.max(newStreak, user.longestStreak || 0),
-      },
-    });
-
-    return { id: result.id };
+  // 7. Create the attempt in a pending state
+  const attempt = await prisma.writingAttempt.create({
+    data: {
+      userId: dbUserId,
+      taskId,
+      content,
+      wordCount,
+      timeSpent,
+      completed: false,
+    },
   });
+
+  // 8. Offload heavy compute to background worker
+  after(async () => {
+    await processWritingFeedback(attempt.id);
+  });
+
   revalidatePath("/dashboard");
   revalidatePath("/writing");
 
-  return { success: true, data: attemptId };
+  return { success: true, data: { id: attempt.id } };
 }
 
 /**

@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma";
 import { SubmitSpeakingInput, submitSpeakingSchema } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
-import { generateSpeakingAIFeedback } from "../geminiAi";
-import { calculateNewStreak, getMonthTimeValues } from "../utils";
+import { after } from "next/server";
 import { getAuthenticatedId } from "./auth";
+import { processSpeakingFeedback } from "../workers";
 
 /**
  * Get all speaking exercises with optional filtering
@@ -112,153 +112,88 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     score?: number;
   };
 }> {
-  // 1. Validate Input
-  const validation = submitSpeakingSchema.safeParse(data);
-  if (!validation.success) {
-    return { success: false, data: { error: "Invalid input data" } };
-  }
-  // Validate audio blob format
-  const parsed = validation.data;
-  const [meta, base64Data] = parsed.audioBlob.split(",", 2);
-  if (!base64Data || !meta.startsWith("data:audio/")) {
-    return { success: false, data: { error: "Invalid audio data format" } };
-  }
+  try {
+    // 1. Validate Input
+    const validation = submitSpeakingSchema.safeParse(data);
+    if (!validation.success) {
+      return { success: false, data: { error: "Invalid input data" } };
+    }
+    // Validate audio blob format
+    const parsed = validation.data;
+    const [meta, base64Data] = parsed.audioBlob.split(",", 2);
+    if (!base64Data || !meta.startsWith("data:audio/")) {
+      return { success: false, data: { error: "Invalid audio data format" } };
+    }
 
-  // 2. Validate exercise ID
-  if (!data.exerciseId || typeof data.exerciseId !== "string") {
-    throw new Error("Invalid exercise ID");
-  }
+    // 2. Validate exercise ID
+    if (!data.exerciseId || typeof data.exerciseId !== "string") {
+      return { success: false, data: { error: "Invalid exercise ID" } };
+    }
 
-  // 3. Parallelize authentication and exercise fetching (independent operations)
-  const [dbUserId, exercise] = await Promise.all([
-    getAuthenticatedId(),
-    prisma.speakingExercise.findUnique({
-      where: {
-        id: data.exerciseId,
-      },
-    }),
-  ]);
+    // 3. Parallelize authentication and exercise fetching (independent operations)
+    const [dbUserId, exercise] = await Promise.all([
+      getAuthenticatedId(),
+      prisma.speakingExercise.findUnique({
+        where: {
+          id: data.exerciseId,
+        },
+      }),
+    ]);
 
-  // 4. Validate results
-  if (!dbUserId) {
-    throw new Error("User Database ID not found");
-  }
-  if (!exercise) {
-    return { success: false, data: { error: "Exercise not found" } };
-  }
-  /*** PROCESS AUDIO ***/
-  // 1. extract base64 data - already done above
-  // const base64Data = data.audioBlob.split(",")[1];
-  // 2. convert base64 to buffer
-  const buffer = Buffer.from(base64Data, "base64");
+    // 4. Validate results
+    if (!exercise) {
+      return { success: false, data: { error: "Exercise not found" } };
+    }
+    /*** PROCESS AUDIO ***/
+    // 1. extract base64 data - already done above
+    // const base64Data = data.audioBlob.split(",")[1];
+    // 2. convert base64 to buffer
+    const buffer = Buffer.from(base64Data, "base64");
 
-  // 3. Upload audio to storage
-  const filename = `speaking/${dbUserId}/${Date.now()}.webm`;
-  const blob = await put(filename, buffer, {
-    access: "public",
-    contentType: "audio/webm",
-  });
+    // 3. Upload audio to storage
+    const filename = `speaking/${dbUserId}/${Date.now()}.webm`;
+    const blob = await put(filename, buffer, {
+      access: "public",
+      contentType: "audio/webm",
+    });
 
-  console.log("Audio uploaded to storage:", blob.url);
+    console.log("Audio uploaded to storage:", blob.url);
 
-  /** base64 -> GenerateAI feedback, no need for transcript**/
-  /*** GENERATE AI FEEDBACK ***/
-  const feedback = await generateSpeakingAIFeedback(
-    exercise.part,
-    exercise.questions as string[],
-    base64Data,
-    data.duration,
-  );
-
-  /*** SAVE TO DB WITH TRANSACTION ***/
-  const attemptId = await prisma.$transaction(async (tx) => {
-    // Fetch user with row lock to prevent race conditions
-    const [user] = await tx.$queryRaw<
-      { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
-    >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
-
-    if (!user) throw new Error("User not found");
-
-    // Calculate time-based values inside transaction
-    const now = new Date();
-    const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
-    const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
-
-    // Create the attempt
-    const attempt = await tx.speakingAttempt.create({
+    /*** CREATE PENDING ATTEMPT ***/
+    const attempt = await prisma.speakingAttempt.create({
       data: {
         userId: dbUserId,
         exerciseId: exercise.id,
         audioUrl: blob.url,
-        overallScore: feedback.overallScore,
-        feedback: feedback,
-        completed: true,
         audioDuration: data.duration,
+        completed: false,
       },
     });
 
-    // Recalculate monthly average for Speaking within transaction
-    const monthlyStats = await tx.speakingAttempt.aggregate({
-      where: {
-        userId: dbUserId,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-      },
-      _avg: { overallScore: true },
-      _count: { id: true },
-    });
-    const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
-
-    // Update Analytics
-    await tx.userAnalytics.upsert({
-      where: {
-        userId_month_year: {
-          userId: dbUserId,
-          month,
-          year,
-        },
-      },
-      update: {
-        exercisesDone: { increment: 1 },
-        totalStudyTime: { increment: Math.round(data.duration / 60) },
-        speakingAvg: realAverage,
-      },
-      create: {
-        userId: dbUserId,
-        month,
-        year,
-        speakingAvg: realAverage,
-        exercisesDone: 1,
-        totalStudyTime: Math.round(data.duration / 60),
-      },
+    /*** OFFLOAD HEAVY COMPUTE ***/
+    after(async () => {
+      await processSpeakingFeedback(attempt.id, base64Data);
     });
 
-    // Update User Streak & Stats
-    await tx.user.update({
-      where: { id: dbUserId },
+    revalidatePath("/speaking");
+    revalidatePath("/dashboard");
+
+    // 5. Return result
+    return {
+      success: true,
       data: {
-        totalStudyTime: {
-          increment: Math.round(data.duration / 60),
-        },
-        lastStudyDate: now,
-        currentStreak: newStreak,
-        longestStreak: Math.max(newStreak, user.longestStreak || 0),
+        attemptId: attempt.id,
       },
-    });
-
-    return attempt.id;
-  });
-  /*** REVALIDATE CACHE ***/
-  revalidatePath("/speaking");
-  revalidatePath("/dashboard");
-
-  // 5. Return result
-  return {
-    success: true,
-    data: {
-      attemptId: attemptId,
-      score: feedback.overallScore,
-    },
-  };
+    };
+  } catch (error) {
+    console.error("Error in submitSpeakingExercise:", error);
+    return {
+      success: false,
+      data: {
+        error: error instanceof Error ? error.message : "Internal server error, failed to submit exercise",
+      },
+    };
+  }
 }
 
 /**

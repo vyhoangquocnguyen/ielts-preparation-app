@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/lib/utils";
 import FeedbackDisplay from "@/components/module/shared/feedbackDisplay";
+import PendingFeedback from "@/components/module/shared/pendingFeedback";
 
 type Props = {
   params: Promise<{ taskId: string; attemptId: string }>;
@@ -23,9 +24,13 @@ export async function generateMetadata({ params }: { params: Promise<{ attemptId
     const { attemptId } = await params;
     const { success, data: attempt } = await getWritingAttempt(attemptId);
     if (!success) return { title: "Review - IELTS Writing" };
+    const scoreText =
+      attempt?.overallScore !== null && attempt?.overallScore !== undefined ?
+        `Score ${attempt.overallScore.toFixed(1)}`
+      : "Pending Feedback";
     return {
-      title: `Review: ${attempt?.task.title} - Score ${attempt?.overallScore?.toFixed(1)}`,
-      description: `Your scored ${attempt?.overallScore?.toFixed(1)} on ${attempt?.task.title}`,
+      title: `Review: ${attempt?.task.title} - ${scoreText}`,
+      description: `Review your attempt for ${attempt?.task.title}`,
     };
   } catch {
     return {
@@ -39,6 +44,12 @@ export default async function ReviewPage({ params }: Props) {
   const { success, data: attempt } = await getWritingAttempt(attemptId);
   // Verify attempt exists and match exerciseId
   if (!success || attempt?.taskId !== taskId) return redirect(`/writing`);
+
+  // Handle pending state
+  if (!attempt.completed) {
+    return <PendingFeedback title="Writing Task" />;
+  }
+
   const { task, content, overallScore, timeSpent, feedback: rawFeedback } = attempt;
   const feedback = rawFeedback as WritingFeedbackDetailed;
 

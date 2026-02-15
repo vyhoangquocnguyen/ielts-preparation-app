@@ -110,7 +110,7 @@ const DashboardPage = async () => {
             <ClockIcon className="size-5" />
             Recent Activity
           </CardTitle>
-          <CardDescription>Your recent activity activities</CardDescription>
+          <CardDescription>Recent activities</CardDescription>
         </CardHeader>
         <CardContent>
           {recentActivity.length > 0 ?
