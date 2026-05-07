@@ -6,7 +6,7 @@ import { SubmitSpeakingInput, submitSpeakingSchema } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { generateSpeakingAIFeedback } from "../geminiAi";
-import { calculateNewStreak } from "../utils";
+import { calculateNewStreak, calculateIncrementalAverage } from "../utils";
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -161,19 +161,26 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   });
   /*** UPDATE USER ANALYTICS ***/
   const now = new Date();
-  const month = now.getMonth();
+  const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  const startOfMonth = new Date(year, month, 1);
-  const endOfMonth = new Date(year, month + 1, 0);
-  const monthlyStats = await prisma.speakingAttempt.aggregate({
-    where: {
-      userId: user.id,
-      createdAt: { gte: startOfMonth, lte: endOfMonth },
-    },
-    _avg: { overallScore: true },
-    _count: { id: true },
+
+  // Calculate incremental averages
+  const newUserSpeakingAvg = calculateIncrementalAverage(
+    user.speakingAvg || 0,
+    user.speakingDone || 0,
+    feedback.overallScore
+  );
+
+  // Update Analytics incrementally
+  const analytics = await prisma.userAnalytics.findUnique({
+    where: { userId_month_year: { userId: user.id, month, year } }
   });
-  const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+
+  const newMonthlyAvg = calculateIncrementalAverage(
+    analytics?.speakingAvg || 0,
+    analytics?.speakingDone || 0,
+    feedback.overallScore
+  );
 
   await prisma.userAnalytics.upsert({
     where: {
@@ -185,14 +192,16 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     },
     update: {
       exercisesDone: { increment: 1 },
+      speakingDone: { increment: 1 },
       totalStudyTime: { increment: Math.round(data.duration / 60) },
-      speakingAvg: realAverage,
+      speakingAvg: newMonthlyAvg,
     },
     create: {
       userId: user.id,
       month,
       year,
-      speakingAvg: realAverage,
+      speakingAvg: feedback.overallScore,
+      speakingDone: 1,
       exercisesDone: 1,
       totalStudyTime: Math.round(data.duration / 60),
     },
@@ -210,6 +219,8 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
       lastStudyDate: now,
       currentStreak: newStreak,
       longestStreak: Math.max(newStreak, user.longestStreak || 0),
+      speakingDone: { increment: 1 },
+      speakingAvg: newUserSpeakingAvg,
     },
   });
   /*** REVALIDATE CACHE ***/

@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateBandScore, calculateNewStreak } from "../utils";
+import { calculateBandScore, calculateNewStreak, calculateIncrementalAverage } from "../utils";
 import { revalidatePath } from "next/cache";
 
 /***** Get listening exercises, fetch all with questions *****/
@@ -184,41 +184,47 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0);
 
-    // Recalculate monthly average for Listening
-    const monthlyStats = await prisma.listeningAttempt.aggregate({
-      where: {
-        userId: user.id,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-      },
-      _avg: { score: true },
+    // Calculate incremental averages to avoid heavy aggregates
+    const newUserListeningAvg = calculateIncrementalAverage(
+      user.listeningAvg || 0,
+      user.listeningDone || 0,
+      bandScore
+    );
+
+    // Update Analytics incrementally
+    const analytics = await prisma.userAnalytics.findUnique({
+      where: { userId_month_year: { userId: user.id, month, year } }
     });
 
-    const realAverage = monthlyStats._avg.score || bandScore;
+    const newMonthlyAvg = calculateIncrementalAverage(
+      analytics?.listeningAvg || 0,
+      analytics?.listeningDone || 0,
+      bandScore
+    );
 
-    // Update Analytics
     await prisma.userAnalytics.upsert({
       where: {
         userId_month_year: { userId: user.id, month, year },
       },
       update: {
         exercisesDone: { increment: 1 },
+        listeningDone: { increment: 1 },
         totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-        listeningAvg: realAverage,
+        listeningAvg: newMonthlyAvg,
       },
       create: {
         userId: user.id,
         month,
         year,
-        listeningAvg: realAverage,
+        listeningAvg: bandScore,
+        listeningDone: 1,
         exercisesDone: 1,
         totalStudyTime: Math.round(validatedData.timeSpent / 60),
       },
     });
 
-    // Update User Streak & Stats
+    // Update User Streak & Stats (including denormalized averages)
     const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
     await prisma.user.update({
@@ -230,6 +236,8 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         },
         currentStreak: newStreak,
         longestStreak: Math.max(newStreak, user.longestStreak || 0),
+        listeningDone: { increment: 1 },
+        listeningAvg: newUserListeningAvg,
       },
     });
 
