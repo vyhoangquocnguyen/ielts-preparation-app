@@ -30,6 +30,17 @@ model User{
   lastStudyDate DateTime?
   totalStudyTime Int @default(0)
 
+  // Denormalized stats for performance
+  listeningAvg Float @default(0)
+  readingAvg Float @default(0)
+  speakingAvg Float @default(0)
+  writingAvg Float @default(0)
+
+  listeningDone Int @default(0)
+  readingDone Int @default(0)
+  speakingDone Int @default(0)
+  writingDone Int @default(0)
+
   // Relations (with other models - listening, reading, speaking, writing attempts)
   listeningAttempts ListeningAttempt[]
   readingAttempts ReadingAttempt[]
@@ -58,6 +69,11 @@ model UserAnalytics {
   readingAvg Float @default(0)
   speakingAvg Float @default(0)
   writingAvg Float @default(0)
+
+  listeningDone Int @default(0)
+  readingDone Int @default(0)
+  speakingDone Int @default(0)
+  writingDone Int @default(0)
 
   exercisesDone Int @default(0)
   totalStudyTime Int @default(0)
@@ -149,6 +165,7 @@ model ListeningAttempt {
   @@index([userId])
   @@index([exerciseId])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 // Reading Module
@@ -225,6 +242,7 @@ model ReadingAttempt {
   @@index([userId])
   @@index([exerciseId])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 // Writing module
@@ -282,6 +300,7 @@ model WritingAttempt {
   @@index([userId])
   @@index([taskId])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 // Speaking Module
@@ -336,6 +355,7 @@ model SpeakingAttempt {
   @@index([userId])
   @@index([exerciseId])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 // Bookmark

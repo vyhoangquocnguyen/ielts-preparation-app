@@ -99,18 +99,20 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  const startOfMonth = new Date(year, month - 1, 1);
-  const endOfMonth = new Date(year, month, 0);
-  // Get real average from DB
-  const monthlyStats = await prisma.writingAttempt.aggregate({
-    where: {
-      userId: user.id,
-      createdAt: { gte: startOfMonth, lte: endOfMonth },
-    },
-    _avg: { overallScore: true },
-    _count: { id: true },
+
+  // Calculate incremental averages
+  const currentWritingAvg = user.writingAvg || 0;
+  const currentWritingDone = user.writingDone || 0;
+  const newUserWritingAvg = (currentWritingAvg * currentWritingDone + feedback.overallScore) / (currentWritingDone + 1);
+
+  // Update Analytics incrementally
+  const analytics = await prisma.userAnalytics.findUnique({
+    where: { userId_month_year: { userId: user.id, month, year } }
   });
-  const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+
+  const currentMonthlyAvg = analytics?.writingAvg || 0;
+  const currentMonthlyDone = analytics?.writingDone || 0;
+  const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + feedback.overallScore) / (currentMonthlyDone + 1);
 
   await prisma.userAnalytics.upsert({
     where: {
@@ -122,14 +124,16 @@ export async function submitWritingTask(data: SubmitWritingInput) {
     },
     update: {
       exercisesDone: { increment: 1 },
+      writingDone: { increment: 1 },
       totalStudyTime: { increment: Math.round(timeSpent / 60) },
-      writingAvg: realAverage, // Fixed: Use absolute value, not increment
+      writingAvg: newMonthlyAvg,
     },
     create: {
       userId: user.id,
       month,
       year,
-      writingAvg: realAverage,
+      writingAvg: feedback.overallScore,
+      writingDone: 1,
       exercisesDone: 1,
       totalStudyTime: Math.round(timeSpent / 60),
     },
@@ -146,6 +150,8 @@ export async function submitWritingTask(data: SubmitWritingInput) {
       lastStudyDate: now,
       currentStreak: newStreak,
       longestStreak: Math.max(newStreak, user.longestStreak || 0),
+      writingDone: { increment: 1 },
+      writingAvg: newUserWritingAvg,
     },
   });
   revalidatePath("/dashboard");

@@ -188,41 +188,43 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0);
 
-    // Recalculate monthly average for Reading
-    const monthlyStats = await prisma.readingAttempt.aggregate({
-      where: {
-        userId: user.id,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-      },
-      _avg: { score: true },
+    // Calculate incremental averages
+    const currentReadingAvg = user.readingAvg || 0;
+    const currentReadingDone = user.readingDone || 0;
+    const newUserReadingAvg = (currentReadingAvg * currentReadingDone + bandScore) / (currentReadingDone + 1);
+
+    // Update Analytics incrementally
+    const analytics = await prisma.userAnalytics.findUnique({
+      where: { userId_month_year: { userId: user.id, month, year } }
     });
 
-    const realAverage = monthlyStats._avg.score || bandScore;
+    const currentMonthlyAvg = analytics?.readingAvg || 0;
+    const currentMonthlyDone = analytics?.readingDone || 0;
+    const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + bandScore) / (currentMonthlyDone + 1);
 
-    // Update Analytics
     await prisma.userAnalytics.upsert({
       where: {
         userId_month_year: { userId: user.id, month, year },
       },
       update: {
         exercisesDone: { increment: 1 },
+        readingDone: { increment: 1 },
         totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-        readingAvg: realAverage,
+        readingAvg: newMonthlyAvg,
       },
       create: {
         userId: user.id,
         month,
         year,
-        readingAvg: realAverage,
+        readingAvg: bandScore,
+        readingDone: 1,
         exercisesDone: 1,
         totalStudyTime: Math.round(validatedData.timeSpent / 60),
       },
     });
 
-    // Update User Streak & Stats
+    // Update User Streak & Stats (including denormalized averages)
     const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
     await prisma.user.update({
@@ -234,6 +236,8 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
         },
         currentStreak: newStreak,
         longestStreak: Math.max(newStreak, user.longestStreak || 0),
+        readingDone: { increment: 1 },
+        readingAvg: newUserReadingAvg,
       },
     });
 

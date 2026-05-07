@@ -5,9 +5,10 @@ import { auth } from "@clerk/nextjs/server";
 import { calculateNewStreak } from "../utils";
 import { revalidatePath } from "next/cache";
 import { updateUserProfileSchema } from "../validation";
+import { cache } from "react";
 
 // Get current user from database
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
@@ -34,108 +35,46 @@ export async function getCurrentUser() {
   }
 
   return user;
-}
+});
 
 // Get dashboard statistics for a user
 export async function getDashboardStatistics(userId: string) {
-  // Get counts of completed exercise per module
-  const [listeningCount, readingCount, writingCount, speakingCount] = await Promise.all([
-    prisma.listeningAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-    prisma.readingAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-    prisma.writingAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-    prisma.speakingAttempt.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    }),
-  ]);
-
-  // Get average score for each module
-  const [listeningAve, readingAve, writingAve, speakingAve] = await Promise.all([
-    prisma.listeningAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-      },
-      _avg: {
-        score: true,
-      },
-    }),
-    prisma.readingAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-      },
-      _avg: {
-        score: true,
-      },
-    }),
-    prisma.writingAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-        overallScore: {
-          not: null,
-        },
-      },
-      _avg: {
-        overallScore: true,
-      },
-    }),
-    prisma.speakingAttempt.aggregate({
-      where: {
-        userId,
-        completed: true,
-        overallScore: {
-          not: null,
-        },
-      },
-      _avg: {
-        overallScore: true,
-      },
-    }),
-  ]);
-
-  // Get user data for study time
+  // Optimized: Fetch all stats directly from the User model (O(1) retrieval)
   const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
+    where: { id: userId },
     select: {
       totalStudyTime: true,
+      listeningDone: true,
+      readingDone: true,
+      writingDone: true,
+      speakingDone: true,
+      listeningAvg: true,
+      readingAvg: true,
+      writingAvg: true,
+      speakingAvg: true,
     },
   });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   return {
-    exerciseCompleted: listeningCount + readingCount + writingCount + speakingCount,
+    exerciseCompleted:
+      user.listeningDone + user.readingDone + user.writingDone + user.speakingDone,
     moduleCounts: {
-      listening: listeningCount,
-      reading: readingCount,
-      writing: writingCount,
-      speaking: speakingCount,
+      listening: user.listeningDone,
+      reading: user.readingDone,
+      writing: user.writingDone,
+      speaking: user.speakingDone,
     },
     averageScore: {
-      listening: listeningAve._avg.score,
-      reading: readingAve._avg.score,
-      writing: writingAve._avg.overallScore,
-      speaking: speakingAve._avg.overallScore,
+      listening: user.listeningAvg,
+      reading: user.readingAvg,
+      writing: user.writingAvg,
+      speaking: user.speakingAvg,
     },
-    totalStudyTime: user?.totalStudyTime,
+    totalStudyTime: user.totalStudyTime,
   };
 }
 

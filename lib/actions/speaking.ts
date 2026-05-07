@@ -161,19 +161,22 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   });
   /*** UPDATE USER ANALYTICS ***/
   const now = new Date();
-  const month = now.getMonth();
+  const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  const startOfMonth = new Date(year, month, 1);
-  const endOfMonth = new Date(year, month + 1, 0);
-  const monthlyStats = await prisma.speakingAttempt.aggregate({
-    where: {
-      userId: user.id,
-      createdAt: { gte: startOfMonth, lte: endOfMonth },
-    },
-    _avg: { overallScore: true },
-    _count: { id: true },
+
+  // Calculate incremental averages
+  const currentSpeakingAvg = user.speakingAvg || 0;
+  const currentSpeakingDone = user.speakingDone || 0;
+  const newUserSpeakingAvg = (currentSpeakingAvg * currentSpeakingDone + feedback.overallScore) / (currentSpeakingDone + 1);
+
+  // Update Analytics incrementally
+  const analytics = await prisma.userAnalytics.findUnique({
+    where: { userId_month_year: { userId: user.id, month, year } }
   });
-  const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+
+  const currentMonthlyAvg = analytics?.speakingAvg || 0;
+  const currentMonthlyDone = analytics?.speakingDone || 0;
+  const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + feedback.overallScore) / (currentMonthlyDone + 1);
 
   await prisma.userAnalytics.upsert({
     where: {
@@ -185,14 +188,16 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
     },
     update: {
       exercisesDone: { increment: 1 },
+      speakingDone: { increment: 1 },
       totalStudyTime: { increment: Math.round(data.duration / 60) },
-      speakingAvg: realAverage,
+      speakingAvg: newMonthlyAvg,
     },
     create: {
       userId: user.id,
       month,
       year,
-      speakingAvg: realAverage,
+      speakingAvg: feedback.overallScore,
+      speakingDone: 1,
       exercisesDone: 1,
       totalStudyTime: Math.round(data.duration / 60),
     },
@@ -210,6 +215,8 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
       lastStudyDate: now,
       currentStreak: newStreak,
       longestStreak: Math.max(newStreak, user.longestStreak || 0),
+      speakingDone: { increment: 1 },
+      speakingAvg: newUserSpeakingAvg,
     },
   });
   /*** REVALIDATE CACHE ***/
