@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateBandScore, calculateNewStreak } from "../utils";
+import { calculateBandScore, calculateNewStreak, calculateIncrementalAverage } from "../utils";
 import { revalidatePath } from "next/cache";
 
 /***** Get listening exercises, fetch all with questions *****/
@@ -186,18 +186,22 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     const year = now.getFullYear();
 
     // Calculate incremental averages to avoid heavy aggregates
-    const currentListeningAvg = user.listeningAvg || 0;
-    const currentListeningDone = user.listeningDone || 0;
-    const newUserListeningAvg = (currentListeningAvg * currentListeningDone + bandScore) / (currentListeningDone + 1);
+    const newUserListeningAvg = calculateIncrementalAverage(
+      user.listeningAvg || 0,
+      user.listeningDone || 0,
+      bandScore
+    );
 
     // Update Analytics incrementally
     const analytics = await prisma.userAnalytics.findUnique({
       where: { userId_month_year: { userId: user.id, month, year } }
     });
 
-    const currentMonthlyAvg = analytics?.listeningAvg || 0;
-    const currentMonthlyDone = analytics?.listeningDone || 0;
-    const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + bandScore) / (currentMonthlyDone + 1);
+    const newMonthlyAvg = calculateIncrementalAverage(
+      analytics?.listeningAvg || 0,
+      analytics?.listeningDone || 0,
+      bandScore
+    );
 
     await prisma.userAnalytics.upsert({
       where: {

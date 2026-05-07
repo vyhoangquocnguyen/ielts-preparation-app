@@ -125,3 +125,8 @@ export function formatTime(seconds: number) {
 
   return [hours, minutes, remainingSeconds].map((v) => v.toString().padStart(2, "0")).join(":");
 }
+
+// Calculate incremental average for O(1) performance updates
+export function calculateIncrementalAverage(oldAvg: number, oldCount: number, newValue: number): number {
+  return (oldAvg * oldCount + newValue) / (oldCount + 1);
+}

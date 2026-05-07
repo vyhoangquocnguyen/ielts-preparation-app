@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { calculateBandScore, calculateNewStreak } from "../utils";
+import { calculateBandScore, calculateNewStreak, calculateIncrementalAverage } from "../utils";
 import { revalidatePath } from "next/cache";
 import { submitReadingSchema, SubmitReadingInput } from "../validation";
 import { ZodError } from "zod";
@@ -190,18 +190,22 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
     const year = now.getFullYear();
 
     // Calculate incremental averages
-    const currentReadingAvg = user.readingAvg || 0;
-    const currentReadingDone = user.readingDone || 0;
-    const newUserReadingAvg = (currentReadingAvg * currentReadingDone + bandScore) / (currentReadingDone + 1);
+    const newUserReadingAvg = calculateIncrementalAverage(
+      user.readingAvg || 0,
+      user.readingDone || 0,
+      bandScore
+    );
 
     // Update Analytics incrementally
     const analytics = await prisma.userAnalytics.findUnique({
       where: { userId_month_year: { userId: user.id, month, year } }
     });
 
-    const currentMonthlyAvg = analytics?.readingAvg || 0;
-    const currentMonthlyDone = analytics?.readingDone || 0;
-    const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + bandScore) / (currentMonthlyDone + 1);
+    const newMonthlyAvg = calculateIncrementalAverage(
+      analytics?.readingAvg || 0,
+      analytics?.readingDone || 0,
+      bandScore
+    );
 
     await prisma.userAnalytics.upsert({
       where: {

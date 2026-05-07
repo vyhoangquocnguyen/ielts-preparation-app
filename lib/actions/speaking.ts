@@ -6,7 +6,7 @@ import { SubmitSpeakingInput, submitSpeakingSchema } from "../validation";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { generateSpeakingAIFeedback } from "../geminiAi";
-import { calculateNewStreak } from "../utils";
+import { calculateNewStreak, calculateIncrementalAverage } from "../utils";
 
 // Get speaking exercises, fetch all with questions
 export async function getSpeakingExercises(filter?: { part?: string }) {
@@ -165,18 +165,22 @@ export async function submitSpeakingExercise(data: SubmitSpeakingInput): Promise
   const year = now.getFullYear();
 
   // Calculate incremental averages
-  const currentSpeakingAvg = user.speakingAvg || 0;
-  const currentSpeakingDone = user.speakingDone || 0;
-  const newUserSpeakingAvg = (currentSpeakingAvg * currentSpeakingDone + feedback.overallScore) / (currentSpeakingDone + 1);
+  const newUserSpeakingAvg = calculateIncrementalAverage(
+    user.speakingAvg || 0,
+    user.speakingDone || 0,
+    feedback.overallScore
+  );
 
   // Update Analytics incrementally
   const analytics = await prisma.userAnalytics.findUnique({
     where: { userId_month_year: { userId: user.id, month, year } }
   });
 
-  const currentMonthlyAvg = analytics?.speakingAvg || 0;
-  const currentMonthlyDone = analytics?.speakingDone || 0;
-  const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + feedback.overallScore) / (currentMonthlyDone + 1);
+  const newMonthlyAvg = calculateIncrementalAverage(
+    analytics?.speakingAvg || 0,
+    analytics?.speakingDone || 0,
+    feedback.overallScore
+  );
 
   await prisma.userAnalytics.upsert({
     where: {

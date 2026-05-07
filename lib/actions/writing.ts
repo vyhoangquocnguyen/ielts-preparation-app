@@ -5,7 +5,7 @@ import { generateWritingAIFeedback } from "../geminiAi";
 import { revalidatePath } from "next/cache";
 import { SubmitWritingInput, submitWritingSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateNewStreak } from "../utils";
+import { calculateNewStreak, calculateIncrementalAverage } from "../utils";
 
 export async function getWritingTasks(filters?: { taskType?: string; category?: string }) {
   // Authenticate user session
@@ -101,18 +101,22 @@ export async function submitWritingTask(data: SubmitWritingInput) {
   const year = now.getFullYear();
 
   // Calculate incremental averages
-  const currentWritingAvg = user.writingAvg || 0;
-  const currentWritingDone = user.writingDone || 0;
-  const newUserWritingAvg = (currentWritingAvg * currentWritingDone + feedback.overallScore) / (currentWritingDone + 1);
+  const newUserWritingAvg = calculateIncrementalAverage(
+    user.writingAvg || 0,
+    user.writingDone || 0,
+    feedback.overallScore
+  );
 
   // Update Analytics incrementally
   const analytics = await prisma.userAnalytics.findUnique({
     where: { userId_month_year: { userId: user.id, month, year } }
   });
 
-  const currentMonthlyAvg = analytics?.writingAvg || 0;
-  const currentMonthlyDone = analytics?.writingDone || 0;
-  const newMonthlyAvg = (currentMonthlyAvg * currentMonthlyDone + feedback.overallScore) / (currentMonthlyDone + 1);
+  const newMonthlyAvg = calculateIncrementalAverage(
+    analytics?.writingAvg || 0,
+    analytics?.writingDone || 0,
+    feedback.overallScore
+  );
 
   await prisma.userAnalytics.upsert({
     where: {
