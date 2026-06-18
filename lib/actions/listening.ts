@@ -3,7 +3,12 @@
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateBandScore, calculateNewStreak, getMonthTimeValues } from "../utils";
+import {
+  calculateBandScore,
+  calculateIncrementalAverage,
+  calculateNewStreak,
+  getMonthTimeValues,
+} from "../utils";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedId } from "./auth";
 
@@ -167,15 +172,23 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     const attemptId = await prisma.$transaction(async (tx) => {
       // Fetch user with row lock to prevent race conditions
       const [user] = await tx.$queryRaw<
-        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
-      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
+        {
+          id: string;
+          currentStreak: number | null;
+          lastStudyDate: Date | null;
+          longestStreak: number | null;
+          listeningAvg: number;
+          listeningDone: number;
+        }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "listeningAvg", "listeningDone" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
 
       if (!user) throw new Error("User not found");
 
       // Calculate time-based values inside transaction
       const now = new Date();
-      const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
+      const { month, year } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
+
       // Create the attempt
       const attempt = await tx.listeningAttempt.create({
         data: {
@@ -190,18 +203,17 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         },
       });
 
-      // Recalculate monthly average for Listening within transaction
-      const monthlyStats = await tx.listeningAttempt.aggregate({
-        where: {
-          userId: dbUserId,
-          createdAt: { gte: startOfMonth, lte: endOfMonth },
-        },
-        _avg: { score: true },
+      // Update Analytics incrementally
+      const analytics = await tx.userAnalytics.findUnique({
+        where: { userId_month_year: { userId: dbUserId, month, year } },
       });
 
-      const realAverage = monthlyStats._avg.score || bandScore;
+      const newMonthlyAvg = calculateIncrementalAverage(
+        analytics?.listeningAvg || 0,
+        analytics?.listeningDone || 0,
+        bandScore,
+      );
 
-      // Update Analytics
       await tx.userAnalytics.upsert({
         where: {
           userId_month_year: { userId: dbUserId, month, year },
@@ -209,19 +221,23 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         update: {
           exercisesDone: { increment: 1 },
           totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-          listeningAvg: realAverage,
+          listeningAvg: newMonthlyAvg,
+          listeningDone: { increment: 1 },
         },
         create: {
           userId: dbUserId,
           month,
           year,
-          listeningAvg: realAverage,
+          listeningAvg: bandScore,
+          listeningDone: 1,
           exercisesDone: 1,
           totalStudyTime: Math.round(validatedData.timeSpent / 60),
         },
       });
 
-      // Update User Streak & Stats
+      // Update User Streak & Stats incrementally
+      const newGlobalAvg = calculateIncrementalAverage(user.listeningAvg || 0, user.listeningDone || 0, bandScore);
+
       await tx.user.update({
         where: { id: dbUserId },
         data: {
@@ -231,6 +247,8 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
           },
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, user.longestStreak || 0),
+          listeningAvg: newGlobalAvg,
+          listeningDone: { increment: 1 },
         },
       });
 
