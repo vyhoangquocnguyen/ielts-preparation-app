@@ -54,9 +54,16 @@ export async function POST(req: Request) {
     const email = email_addresses[0].email_address;
 
     try {
-      // Create user in database
-      const newUser = await prisma.user.create({
-        data: {
+      // Create user in database using upsert for idempotency
+      const newUser = await prisma.user.upsert({
+        where: { clerkId: id },
+        update: {
+          email: email,
+          firstName: first_name || null,
+          lastName: last_name || null,
+          imgUrl: image_url || null,
+        },
+        create: {
           clerkId: id,
           email: email,
           firstName: first_name || null,
