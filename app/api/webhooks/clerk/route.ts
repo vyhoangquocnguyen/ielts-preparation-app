@@ -2,6 +2,7 @@ import { createClerkClient, WebhookEvent } from "@clerk/nextjs/server";
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
+import { UserRole, Plan } from "@prisma/client";
 
 export async function POST(req: Request) {
   const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -62,16 +63,16 @@ export async function POST(req: Request) {
           firstName: first_name || null,
           lastName: last_name || null,
           imgUrl: image_url || null,
-          role: "STUDENT",
-          plan: "FREE",
+          role: UserRole.STUDENT,
+          plan: Plan.FREE,
         },
       });
       // 2. Sync DB ID back to Clerk Metadata
       await clerkClient.users.updateUserMetadata(id, {
         publicMetadata: {
           dbUserId: newUser.id, // Matches your JWT template key
-          role: "STUDENT",
-          plan: "FREE",
+          role: UserRole.STUDENT,
+          plan: Plan.FREE,
         },
       });
       console.log(`User created: ${email_addresses[0].email_address}`);
@@ -96,8 +97,8 @@ export async function POST(req: Request) {
           firstName: first_name || null,
           lastName: last_name || null,
           imgUrl: image_url || null,
-          role: "STUDENT",
-          plan: "FREE",
+          role: UserRole.STUDENT,
+          plan: Plan.FREE,
         },
       });
       console.log(`User updated: ${email_addresses[0].email_address}`);

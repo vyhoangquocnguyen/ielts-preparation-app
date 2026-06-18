@@ -1,20 +1,35 @@
 // prisma/seed.ts
 // Seed the database with sample data for testing
 
-import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, UserRole, Plan } from "@prisma/client";
 import "dotenv/config";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const prisma = new PrismaClient({
-  adapter,
-});
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Starting database seed...");
+
+  // Create a sample user with new fields
+  const sampleUser = await prisma.user.upsert({
+    where: { email: "test@example.com" }, // Unique identifier for upsert
+    update: {}, // No specific update needed if user already exists
+    create: {
+      clerkId: "user_test_clerk_id_123", // Dummy Clerk ID, ensure it's unique if you create more users
+      email: "test@example.com",
+      firstName: "John",
+      lastName: "Doe",
+      imgUrl: "https://example.com/profile.jpg",
+      role: UserRole.STUDENT,
+      plan: Plan.FREE,
+      targetScore: 7.5,
+      studyGoal: "Improve speaking fluency",
+      totalStudyTime: 120,
+      currentStreak: 5,
+      longestStreak: 10,
+      lastStudyDate: new Date(),
+    },
+  });
+  console.log("✅ Created/Updated sample user:", sampleUser.id);
 
   // Create sample listening exercises
   const listeningExercise = await prisma.listeningExercise.create({
@@ -182,7 +197,6 @@ You will have 1 minute to prepare and 2 minutes to speak.`,
 
   console.log("🎉 Database seed completed successfully!");
 }
-
 
 main()
   .catch((e) => {
