@@ -1,6 +1,5 @@
 "use client";
 
-import { WritingTask } from "@/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -122,14 +121,13 @@ export default function WritingEditor({ task }: WritingEditorProps) {
               onClick={handleSubmit}
               disabled={isSubmitting || content.length < 10}
               className="rounded-xl px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/20">
-              {isSubmitting ? (
+              {isSubmitting ?
                 "Submitting..."
-              ) : (
-                <>
+              : <>
                   <CheckIcon className="w-4 h-4 mr-2" />
                   Submit
                 </>
-              )}
+              }
             </Button>
           </div>
         </div>

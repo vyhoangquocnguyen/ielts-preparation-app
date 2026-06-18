@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { SpeakingFeedbackDetailed, WritingFeedbackDetailed } from "@/types";
 import { speakingAIFeedbackSchema, writingAIFeedbackSchema } from "./validation";
 
 // Initialize Gemini
@@ -10,7 +9,7 @@ export async function generateWritingAIFeedback(
   taskType: string,
   prompt: string,
   wordCount: number,
-  content: string
+  content: string,
 ): Promise<WritingFeedbackDetailed> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
@@ -98,13 +97,15 @@ export async function generateSpeakingAIFeedback(
   questions: string[],
   audioBase64: string,
   duration: number,
-  mimeType: string = "audio/webm"
+  mimeType: string = "audio/webm",
 ): Promise<SpeakingFeedbackDetailed> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const systemPrompt = `You are an expert IELTS Speaking examiner. Evaluate the following Speaking ${
-      part === "part1" ? "Part 1" : part === "part2" ? "Part 2" : "Part 3"
+      part === "part1" ? "Part 1"
+      : part === "part2" ? "Part 2"
+      : "Part 3"
     } response.
 
 Questions: ${questions.join(", ")}

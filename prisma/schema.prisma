@@ -12,13 +12,35 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+enum Plan {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum AttemptStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+}
 model User{
   id String @id @default(cuid())
   clerkId String @unique
   email String @unique
+  role UserRole @default(STUDENT)
+  plan Plan @default(FREE)
+
+
   firstName String?
   lastName String?
   imgUrl String?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -273,6 +295,8 @@ model WritingAttempt {
   overallScore Float?
   feedback Json?
 
+  status AttemptStatus @default(PENDING)
+
   timeSpent Int
   completed Boolean @default(false)
 
@@ -327,6 +351,8 @@ model SpeakingAttempt {
 
   overallScore Float?
   feedback Json?
+
+  status AttemptStatus @default(PENDING)
 
   completed Boolean @default(false)
 

@@ -9,9 +9,9 @@ export default async function WritingPracticePage({
 }: {
   searchParams: Promise<{ difficulty?: string; category?: string }>;
 }) {
-  const resolvedParams = await searchParams;
-  const { success, data: tasks } = await getWritingTasks(resolvedParams);
-  if (!success)
+  const queries = await searchParams;
+  const { success, data: tasks } = await getWritingTasks(queries);
+  if (!success || !tasks)
     return (
       <div className="flex items-center justify-center text-center">
         <ExclamationCircleIcon className="h-12 w-12 text-destructive" />

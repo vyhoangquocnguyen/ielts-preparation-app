@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-
 export async function transcribeAudio(audioUrl: string): Promise<string> {
   try {
     // DEVELOPMENT VERSION (Mock)
@@ -27,7 +26,6 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
     return "Transcription unavailable";
   }
 }
-
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -61,7 +59,6 @@ export function getScoreColor(score: number) {
   return "text-red-600 dark:text-red-400";
 }
 
-// Calculate streak
 // Calculate streak
 export function calculateNewStreak(currentStreak: number, lastStudyDate: Date | null): number {
   const today = new Date();
@@ -124,4 +121,14 @@ export function formatTime(seconds: number) {
   const remainingSeconds = totalSeconds % 60;
 
   return [hours, minutes, remainingSeconds].map((v) => v.toString().padStart(2, "0")).join(":");
+}
+
+// Calculate month-related time values for analytics
+export function getMonthTimeValues(now: Date = new Date()) {
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const startOfMonth = new Date(year, month - 1, 1);
+  const endOfMonth = new Date(year, month, 0);
+
+  return { month, year, startOfMonth, endOfMonth };
 }

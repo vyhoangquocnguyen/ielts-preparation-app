@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { Activity, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SpeakingExercise } from "@/types";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { submitSpeakingExercise } from "@/lib/actions/speaking";
@@ -34,8 +33,10 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
     }
     if (duration < 10) {
       setError("Please record for at least 10 seconds");
-      console.log(duration)
-      return;
+     if (duration < 10) {
+       setError("Please record for at least 10 seconds");
+       return;
+     }
     }
     setIsSubmitting(true);
     setError(null);
@@ -95,11 +96,9 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{exercise.title}</h1>
             <span
               className={`text-xs px-2 py-2 rounded-full font-medium${
-                exercise.part === "part1"
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                  : exercise.part === "part2"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                exercise.part === "part1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                : exercise.part === "part2" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
               }`}>
               {exercise.part.replace("part", "Part ")}
             </span>
@@ -113,7 +112,7 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
           <CardTitle>{exercise.part === "part2" ? "Cue Card" : "Question"}</CardTitle>
         </CardHeader>
         <CardContent>
-          {exercise.part === "part2" && exercise.cueCard ? (
+          {exercise.part === "part2" && exercise.cueCard ?
             <div className="prose dark:prose-invert max-w-none">
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-600">
                 <p className="text-gray-900 dark:text-white font-semibold mb-2">{exercise.topic}</p>
@@ -131,8 +130,7 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
                 </div>
               </div>
             </div>
-          ) : (
-            <ul className="space-y-3">
+          : <ul className="space-y-3">
               {exercise.questions.map((question, index) => (
                 <li key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
@@ -142,7 +140,7 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
                 </li>
               ))}
             </ul>
-          )}
+          }
         </CardContent>
       </Card>
 
@@ -171,17 +169,16 @@ export default function SpeakingExerciseLayout({ exercise }: ExerciseLayoutProps
       {audioBlob && (
         <div className="flex justify-center">
           <Button onClick={handleSubmit} disabled={isSubmitting} className="min-w-[250px]" size="lg">
-            {isSubmitting ? (
+            {isSubmitting ?
               <>
                 <ArrowPathIcon className="mr-2 h-4 w-4 animate-spin" />
                 Processing & Generating AI Feedback...
               </>
-            ) : (
-              <>
+            : <>
                 <PaperAirplaneIcon className="mr-2 h-4 w-4" />
                 Submit
               </>
-            )}
+            }
           </Button>
         </div>
       )}

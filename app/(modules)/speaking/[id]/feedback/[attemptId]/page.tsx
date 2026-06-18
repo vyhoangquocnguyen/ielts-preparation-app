@@ -1,9 +1,9 @@
 import FeedbackDisplay from "@/components/module/shared/feedbackDisplay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PendingFeedback from "@/components/module/shared/pendingFeedback";
 import { getSpeakingFeedback } from "@/lib/actions/speaking";
 import { formatTime } from "@/lib/utils";
-import { SpeakingFeedbackDetailed } from "@/types";
 import {
   ArrowLeftCircleIcon,
   ChatBubbleLeftEllipsisIcon,
@@ -18,11 +18,15 @@ import { notFound } from "next/navigation";
 export const generateMetadata = async ({ params }: { params: Promise<{ id: string; attemptId: string }> }) => {
   try {
     const { attemptId } = await params;
-    const { attempt, success } = await getSpeakingFeedback(attemptId);
+    const { data: attempt, success } = await getSpeakingFeedback(attemptId);
     if (attempt !== undefined && success) {
+      const scoreText =
+        attempt.overallScore !== null && attempt.overallScore !== undefined ?
+          `Score ${attempt.overallScore.toFixed(1)}`
+        : "Pending Feedback";
       return {
-        title: `Review: ${attempt.exercise.title} - Score ${attempt.overallScore?.toFixed(1)}`,
-        description: `You scored ${attempt.overallScore?.toFixed(1)} on ${attempt.exercise.title}`,
+        title: `Review: ${attempt.exercise.title} - ${scoreText}`,
+        description: `Review your attempt for ${attempt.exercise.title}`,
       };
     }
   } catch {
@@ -34,9 +38,18 @@ export const generateMetadata = async ({ params }: { params: Promise<{ id: strin
 
 export default async function SpeakingFeedBackPage({ params }: { params: Promise<{ id: string; attemptId: string }> }) {
   const { attemptId } = await params;
-  const { attempt, success } = await getSpeakingFeedback(attemptId);
+  const { data: attempt, success } = await getSpeakingFeedback(attemptId);
 
   if (!success || !attempt) notFound();
+
+  // Handle pending state
+  if (!attempt.completed) {
+    return (
+      <div className="max-w-5xl mx-auto px-4">
+        <PendingFeedback title="Speaking Exercise" />
+      </div>
+    );
+  }
   const { exercise, feedback: rawFeedback } = attempt;
   const feedback = rawFeedback as SpeakingFeedbackDetailed;
   const {
@@ -109,7 +122,7 @@ export default async function SpeakingFeedBackPage({ params }: { params: Promise
           </p>
         </div>
         {/* Overall Score */}
-        <Card className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800">
+        <Card className="mb-6 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-24 h-24 bg-white dark:bg-gray-800 rounded-full shadow-lg mb-4">
@@ -169,7 +182,7 @@ export default async function SpeakingFeedBackPage({ params }: { params: Promise
           tips={tips}
         />
         {/* Questions References */}
-        <Card className="m-6">
+        {/* <Card className="m-6">
           <CardHeader>
             <CardTitle>Questions</CardTitle>
           </CardHeader>
@@ -183,9 +196,9 @@ export default async function SpeakingFeedBackPage({ params }: { params: Promise
               ))}
             </ul>
           </CardContent>
-        </Card>
+        </Card> */}
         {/* Action Buttons */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 p-6 justify-center">
           <Link href={`/speaking/${exercise.id}`}>
             <Button variant="outline" size="lg">
               <ArrowLeftCircleIcon className="w-4 h-4 mr-2" />

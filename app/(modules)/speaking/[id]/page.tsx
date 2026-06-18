@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const { id } = await params;
   try {
-    const { success, exercise } = await getSpeakingExerciseById(id);
+    const { success, data: exercise } = await getSpeakingExerciseById(id);
     if (!success || !exercise) {
       return {
         title: `Exercise not found`,
@@ -25,11 +25,13 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
 export default async function SpeakingPracticePage({ params }: { params: { id: string } }) {
   const { id } = await params;
-  const { success, exercise } = await getSpeakingExerciseById(id);
+  const { success, data: exercise } = await getSpeakingExerciseById(id);
   if (!success || !exercise) {
     notFound();
   }
-  return <div className="min-h-screen">
-    <SpeakingExerciseLayout exercise={exercise} />
-    </div>;
+  return (
+    <div className="min-h-screen">
+      <SpeakingExerciseLayout exercise={exercise} />
+    </div>
+  );
 }

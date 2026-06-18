@@ -1,6 +1,5 @@
 import ReviewLayout from "@/components/module/reviewLayout";
 import { getListeningAttempt } from "@/lib/actions/listening";
-import { ListeningAttemptWithExercise } from "@/types";
 import { redirect } from "next/navigation";
 
 type Props = {

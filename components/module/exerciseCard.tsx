@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getDifficultyColor } from "@/lib/utils";
 import { ClockIcon, BookOpenIcon, PencilSquareIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
-import { BaseExercise, ModuleType } from "@/types";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -34,30 +33,29 @@ const ExerciseCard = <T extends BaseExercise>({ exercise, moduleType }: Exercise
       <CardContent className="space-y-4">
         {/* Stats */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          {moduleType === "reading" ? (
+          {moduleType === "reading" ?
             <div className="flex items-center gap-1">
               <BookOpenIcon className="w-4 h-4" />
               <span>{exercise.wordCount || exercise.minWords || "0"} words</span>
             </div>
-          ) : moduleType === "listening" ? (
+          : moduleType === "listening" ?
             <div className="flex items-center gap-1">
               <ClockIcon className="w-4 h-4" />
               <span>{exercise.duration || exercise.speakingTime || "0"} min</span>
             </div>
-          ) : moduleType === "writing" ? (
+          : moduleType === "writing" ?
             <div className="flex items-center gap-1">
               <PencilSquareIcon className="w-4 h-4" />
               <span>{exercise.wordCount || exercise.minWords || "0"} words</span>
             </div>
-          ) : (
-            <div className="flex items-center gap-1">
+          : <div className="flex items-center gap-1">
               <MicrophoneIcon className="w-4 h-4" />
               <span>
                 {exercise.part ? `Part ${exercise.part.replace("part", "")}` : "Speaking"} •{" "}
                 {exercise.speakingTime || "0"}s
               </span>
             </div>
-          )}
+          }
 
           {exercise._count?.questions !== undefined && (
             <div className="flex items-center gap-1">

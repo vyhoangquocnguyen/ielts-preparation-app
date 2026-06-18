@@ -30,7 +30,7 @@ const DashboardPage = async () => {
     );
   }
   // Fetch dashboard data
-  const [stats, recentActivity] = await Promise.all([getDashboardStatistics(user.id), getRecentActivity(user.id, 5)]);
+  const [stats, recentActivity] = await Promise.all([getDashboardStatistics(), getRecentActivity(5)]);
 
   // Calculate overall average score
   const score = Object.values(stats.averageScore).filter((s): s is number => s !== null && s > 0);
@@ -110,10 +110,10 @@ const DashboardPage = async () => {
             <ClockIcon className="size-5" />
             Recent Activity
           </CardTitle>
-          <CardDescription>Your recent activity activities</CardDescription>
+          <CardDescription>Recent activities</CardDescription>
         </CardHeader>
         <CardContent>
-          {recentActivity.length > 0 ? (
+          {recentActivity.length > 0 ?
             recentActivity.map((activity) => (
               <div key={activity.id} className="flex items-start justify-between py-3">
                 <div className="flex-1">
@@ -126,9 +126,7 @@ const DashboardPage = async () => {
                 </div>
               </div>
             ))
-          ) : (
-            <p>No recent activity</p>
-          )}
+          : <p>No recent activity</p>}
         </CardContent>
       </Card>
 
@@ -139,7 +137,7 @@ const DashboardPage = async () => {
             <BoltIcon className="size-5" />
             Quick Actions
           </CardTitle>
-          <CardDescription>Let's get started</CardDescription>
+          <CardDescription>Let&apos;s get started</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
