@@ -39,40 +39,65 @@ export async function getCurrentUser() {
 // Get dashboard statistics for a user
 export async function getDashboardStatistics() {
   const dbUserId = await getAuthenticatedId();
+  // Get counts of completed exercise per module
+  // Get counts and averages in parallel using the indexed dbUserId
+  const [
+    listeningCount,
+    readingCount,
+    writingCount,
+    speakingCount,
+    listeningAve,
+    readingAve,
+    writingAve,
+    speakingAve,
+    user,
+  ] = await Promise.all([
+    // Counts
+    prisma.listeningAttempt.count({ where: { userId: dbUserId, completed: true } }),
+    prisma.readingAttempt.count({ where: { userId: dbUserId, completed: true } }),
+    prisma.writingAttempt.count({ where: { userId: dbUserId, completed: true } }),
+    prisma.speakingAttempt.count({ where: { userId: dbUserId, completed: true } }),
 
-  // Get denormalized stats directly from the User model (O(1) query)
-  const user = await prisma.user.findUnique({
-    where: { id: dbUserId },
-    select: {
-      listeningDone: true,
-      readingDone: true,
-      writingDone: true,
-      speakingDone: true,
-      listeningAvg: true,
-      readingAvg: true,
-      writingAvg: true,
-      speakingAvg: true,
-      totalStudyTime: true,
-    },
-  });
+    // Averages
+    prisma.listeningAttempt.aggregate({
+      where: { userId: dbUserId, completed: true },
+      _avg: { score: true },
+    }),
+    prisma.readingAttempt.aggregate({
+      where: { userId: dbUserId, completed: true },
+      _avg: { score: true },
+    }),
+    prisma.writingAttempt.aggregate({
+      where: { userId: dbUserId, completed: true, overallScore: { not: null } },
+      _avg: { overallScore: true },
+    }),
+    prisma.speakingAttempt.aggregate({
+      where: { userId: dbUserId, completed: true, overallScore: { not: null } },
+      _avg: { overallScore: true },
+    }),
 
-  if (!user) throw new Error("User not found");
+    // Study Time
+    prisma.user.findUnique({
+      where: { id: dbUserId },
+      select: { totalStudyTime: true },
+    }),
+  ]);
 
   return {
-    exerciseCompleted: user.listeningDone + user.readingDone + user.writingDone + user.speakingDone,
+    exerciseCompleted: listeningCount + readingCount + writingCount + speakingCount,
     moduleCounts: {
-      listening: user.listeningDone,
-      reading: user.readingDone,
-      writing: user.writingDone,
-      speaking: user.speakingDone,
+      listening: listeningCount,
+      reading: readingCount,
+      writing: writingCount,
+      speaking: speakingCount,
     },
     averageScore: {
-      listening: user.listeningAvg,
-      reading: user.readingAvg,
-      writing: user.writingAvg,
-      speaking: user.speakingAvg,
+      listening: listeningAve._avg.score || 0,
+      reading: readingAve._avg.score || 0,
+      writing: writingAve._avg.overallScore || 0,
+      speaking: speakingAve._avg.overallScore || 0,
     },
-    totalStudyTime: user.totalStudyTime,
+    totalStudyTime: user?.totalStudyTime || 0,
   };
 }
 

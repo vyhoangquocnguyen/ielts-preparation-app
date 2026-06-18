@@ -3,12 +3,7 @@
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import {
-  calculateBandScore,
-  calculateIncrementalAverage,
-  calculateNewStreak,
-  getMonthTimeValues,
-} from "../utils";
+import { calculateBandScore, calculateNewStreak, getMonthTimeValues } from "../utils";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedId } from "./auth";
 
@@ -173,15 +168,8 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       // Fetch user with row lock to prevent race conditions
 <<<<<<< HEAD
       const [user] = await tx.$queryRaw<
-        {
-          id: string;
-          currentStreak: number | null;
-          lastStudyDate: Date | null;
-          longestStreak: number | null;
-          listeningAvg: number;
-          listeningDone: number;
-        }[]
-      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "listeningAvg", "listeningDone" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
+        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
 
 =======
       const user = await tx.user.findUnique({
@@ -193,9 +181,8 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
 
       // Calculate time-based values inside transaction
       const now = new Date();
-      const { month, year } = getMonthTimeValues(now);
+      const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
-
       // Create the attempt
       const attempt = await tx.listeningAttempt.create({
         data: {
@@ -210,17 +197,18 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         },
       });
 
-      // Update Analytics incrementally
-      const analytics = await tx.userAnalytics.findUnique({
-        where: { userId_month_year: { userId: dbUserId, month, year } },
+      // Recalculate monthly average for Listening within transaction
+      const monthlyStats = await tx.listeningAttempt.aggregate({
+        where: {
+          userId: dbUserId,
+          createdAt: { gte: startOfMonth, lte: endOfMonth },
+        },
+        _avg: { score: true },
       });
 
-      const newMonthlyAvg = calculateIncrementalAverage(
-        analytics?.listeningAvg || 0,
-        analytics?.listeningDone || 0,
-        bandScore,
-      );
+      const realAverage = monthlyStats._avg.score || bandScore;
 
+      // Update Analytics
       await tx.userAnalytics.upsert({
         where: {
           userId_month_year: { userId: dbUserId, month, year },
@@ -228,23 +216,19 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         update: {
           exercisesDone: { increment: 1 },
           totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-          listeningAvg: newMonthlyAvg,
-          listeningDone: { increment: 1 },
+          listeningAvg: realAverage,
         },
         create: {
           userId: dbUserId,
           month,
           year,
-          listeningAvg: bandScore,
-          listeningDone: 1,
+          listeningAvg: realAverage,
           exercisesDone: 1,
           totalStudyTime: Math.round(validatedData.timeSpent / 60),
         },
       });
 
-      // Update User Streak & Stats incrementally
-      const newGlobalAvg = calculateIncrementalAverage(user.listeningAvg || 0, user.listeningDone || 0, bandScore);
-
+      // Update User Streak & Stats
       await tx.user.update({
         where: { id: dbUserId },
         data: {
@@ -254,8 +238,6 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
           },
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, user.longestStreak || 0),
-          listeningAvg: newGlobalAvg,
-          listeningDone: { increment: 1 },
         },
       });
 
