@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting database seed...");
 
-  // Create a sample user with new fields
+  // Create a sample user that matches the new schema structure
   const sampleUser = await prisma.user.upsert({
     where: { email: "test@example.com" }, // Unique identifier for upsert
     update: {}, // No specific update needed if user already exists
@@ -27,6 +27,14 @@ async function main() {
       currentStreak: 5,
       longestStreak: 10,
       lastStudyDate: new Date(),
+      listeningAvg: 0,
+      readingAvg: 0,
+      speakingAvg: 0,
+      writingAvg: 0,
+      listeningDone: 0,
+      readingDone: 0,
+      speakingDone: 0,
+      writingDone: 0,
     },
   });
   console.log("✅ Created/Updated sample user:", sampleUser.id);

@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   const eventType = event.type;
 
   // When a new user signs up
-  if (eventType === "user.created") {
+  if (eventType === "user.created" || eventType === "user.updated") {
     const { id, email_addresses, first_name, last_name, image_url } = event.data;
 
     if (!email_addresses || email_addresses.length === 0) {
@@ -53,58 +53,40 @@ export async function POST(req: Request) {
     }
 
     const email = email_addresses[0].email_address;
+    const userData = {
+      email: email,
+      firstName: first_name || null,
+      lastName: last_name || null,
+      imgUrl: image_url || null,
+      role: UserRole.STUDENT,
+      plan: Plan.FREE,
+    };
 
     try {
-      // Create user in database
-      const newUser = await prisma.user.create({
-        data: {
+      // Use upsert to handle both creation and updates safely
+      const dbUser = await prisma.user.upsert({
+        where: { clerkId: id },
+        update: userData,
+        create: {
           clerkId: id,
-          email: email,
-          firstName: first_name || null,
-          lastName: last_name || null,
-          imgUrl: image_url || null,
-          role: UserRole.STUDENT,
-          plan: Plan.FREE,
+          ...userData,
         },
       });
-      // 2. Sync DB ID back to Clerk Metadata
+
+      // Sync DB ID back to Clerk Metadata if it was a creation or missing
       await clerkClient.users.updateUserMetadata(id, {
         publicMetadata: {
-          dbUserId: newUser.id, // Matches your JWT template key
+          dbUserId: dbUser.id,
           role: UserRole.STUDENT,
           plan: Plan.FREE,
         },
       });
-      console.log(`User created: ${email_addresses[0].email_address}`);
+
+      console.log(`User processed (${eventType}): ${email}`);
       return new Response("User Synced", { status: 200 });
     } catch (error) {
-      console.error("Error creating user in database:", error);
-      return new Response("Error: Could not create user in database", { status: 500 });
-    }
-  }
-
-  // When user updates their profile
-  if (eventType === "user.updated") {
-    const { id, email_addresses, first_name, last_name, image_url } = event.data;
-    try {
-      // Update user in database
-      await prisma.user.update({
-        where: {
-          clerkId: id,
-        },
-        data: {
-          email: email_addresses[0].email_address,
-          firstName: first_name || null,
-          lastName: last_name || null,
-          imgUrl: image_url || null,
-          role: UserRole.STUDENT,
-          plan: Plan.FREE,
-        },
-      });
-      console.log(`User updated: ${email_addresses[0].email_address}`);
-    } catch (error) {
-      console.error("Error updating user in database:", error);
-      return new Response("Error: Could not update user", { status: 500 });
+      console.error(`Error processing user ${eventType}:`, error);
+      return new Response("Internal Server Error", { status: 500 });
     }
   }
 
