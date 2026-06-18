@@ -1,7 +1,6 @@
 import FeedbackDisplay from "@/components/module/shared/feedbackDisplay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import PendingFeedback from "@/components/module/shared/pendingFeedback";
 import { getSpeakingFeedback } from "@/lib/actions/speaking";
 import { formatTime } from "@/lib/utils";
 import {
@@ -20,13 +19,9 @@ export const generateMetadata = async ({ params }: { params: Promise<{ id: strin
     const { attemptId } = await params;
     const { data: attempt, success } = await getSpeakingFeedback(attemptId);
     if (attempt !== undefined && success) {
-      const scoreText =
-        attempt.overallScore !== null && attempt.overallScore !== undefined ?
-          `Score ${attempt.overallScore.toFixed(1)}`
-        : "Pending Feedback";
       return {
-        title: `Review: ${attempt.exercise.title} - ${scoreText}`,
-        description: `Review your attempt for ${attempt.exercise.title}`,
+        title: `Review: ${attempt.exercise.title} - Score ${attempt.overallScore?.toFixed(1)}`,
+        description: `You scored ${attempt.overallScore?.toFixed(1)} on ${attempt.exercise.title}`,
       };
     }
   } catch {
@@ -41,15 +36,6 @@ export default async function SpeakingFeedBackPage({ params }: { params: Promise
   const { data: attempt, success } = await getSpeakingFeedback(attemptId);
 
   if (!success || !attempt) notFound();
-
-  // Handle pending state
-  if (!attempt.completed) {
-    return (
-      <div className="max-w-5xl mx-auto px-4">
-        <PendingFeedback title="Speaking Exercise" />
-      </div>
-    );
-  }
   const { exercise, feedback: rawFeedback } = attempt;
   const feedback = rawFeedback as SpeakingFeedbackDetailed;
   const {

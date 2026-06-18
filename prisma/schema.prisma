@@ -22,13 +22,6 @@ enum Plan {
   PRO
   PREMIUM
 }
-
-enum AttemptStatus {
-  PENDING
-  GENERATING
-  COMPLETED
-  FAILED
-}
 model User{
   id String @id @default(cuid())
   clerkId String @unique
@@ -313,8 +306,6 @@ model WritingAttempt {
   overallScore Float?
   feedback Json?
 
-  status AttemptStatus @default(PENDING)
-
   timeSpent Int
   completed Boolean @default(false)
 
@@ -370,8 +361,6 @@ model SpeakingAttempt {
 
   overallScore Float?
   feedback Json?
-
-  status AttemptStatus @default(PENDING)
 
   completed Boolean @default(false)
 

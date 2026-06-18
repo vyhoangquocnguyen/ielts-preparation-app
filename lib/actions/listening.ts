@@ -171,6 +171,7 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     // 8. Save to database with transaction to ensure atomicity
     const attemptId = await prisma.$transaction(async (tx) => {
       // Fetch user with row lock to prevent race conditions
+<<<<<<< HEAD
       const [user] = await tx.$queryRaw<
         {
           id: string;
@@ -182,6 +183,12 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         }[]
       >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "listeningAvg", "listeningDone" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
 
+=======
+      const user = await tx.user.findUnique({
+        where: { id: dbUserId },
+        select: { id: true, currentStreak: true, lastStudyDate: true, longestStreak: true },
+      });
+>>>>>>> parent of 75694e1 (refactoring ai workers to reduce heavy load)
       if (!user) throw new Error("User not found");
 
       // Calculate time-based values inside transaction
