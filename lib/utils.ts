@@ -124,15 +124,16 @@ export function formatTime(seconds: number) {
 }
 
 /**
- * Calculates the incremental average when a new score is added.
+ * Calculates the incremental average when a new score is added and rounds to nearest 0.5.
  * formula: newAvg = ((oldAvg * oldCount) + newScore) / (oldCount + 1)
  * @param oldAvg - Current average score
  * @param oldCount - Number of attempts already completed
  * @param newScore - The latest score to include
- * @returns The new average score
+ * @returns The new average score rounded to the nearest 0.5
  */
 export function calculateIncrementalAverage(oldAvg: number, oldCount: number, newScore: number): number {
-  return (oldAvg * oldCount + newScore) / (oldCount + 1);
+  const avg = (oldAvg * oldCount + newScore) / (oldCount + 1);
+  return Math.round(avg * 2) / 2;
 }
 
 // Calculate month-related time values for analytics
