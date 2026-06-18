@@ -1,7 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { calculateBandScore, calculateNewStreak, getMonthTimeValues } from "../utils";
+import {
+  calculateBandScore,
+  calculateIncrementalAverage,
+  calculateNewStreak,
+  getMonthTimeValues,
+} from "../utils";
 import { revalidatePath } from "next/cache";
 import { submitReadingSchema, SubmitReadingInput } from "../validation";
 import { ZodError } from "zod";
@@ -161,14 +166,21 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
     const attemptId = await prisma.$transaction(async (tx) => {
       // Fetch user with row lock to prevent race conditions
       const [user] = await tx.$queryRaw<
-        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
-      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
+        {
+          id: string;
+          currentStreak: number | null;
+          lastStudyDate: Date | null;
+          longestStreak: number | null;
+          readingAvg: number;
+          readingDone: number;
+        }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "readingAvg", "readingDone" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
 
       if (!user) throw new Error("User not found");
 
       // Calculate time-based values inside transaction
       const now = new Date();
-      const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
+      const { month, year } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
       // Create the attempt
@@ -185,18 +197,17 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
         },
       });
 
-      // Recalculate monthly average for Reading within transaction
-      const monthlyStats = await tx.readingAttempt.aggregate({
-        where: {
-          userId: dbUserId,
-          createdAt: { gte: startOfMonth, lte: endOfMonth },
-        },
-        _avg: { score: true },
+      // Update Analytics incrementally
+      const analytics = await tx.userAnalytics.findUnique({
+        where: { userId_month_year: { userId: dbUserId, month, year } },
       });
 
-      const realAverage = monthlyStats._avg.score || bandScore;
+      const newMonthlyAvg = calculateIncrementalAverage(
+        analytics?.readingAvg || 0,
+        analytics?.readingDone || 0,
+        bandScore,
+      );
 
-      // Update Analytics
       await tx.userAnalytics.upsert({
         where: {
           userId_month_year: { userId: dbUserId, month, year },
@@ -204,19 +215,23 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
         update: {
           exercisesDone: { increment: 1 },
           totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-          readingAvg: realAverage,
+          readingAvg: newMonthlyAvg,
+          readingDone: { increment: 1 },
         },
         create: {
           userId: dbUserId,
           month,
           year,
-          readingAvg: realAverage,
+          readingAvg: bandScore,
+          readingDone: 1,
           exercisesDone: 1,
           totalStudyTime: Math.round(validatedData.timeSpent / 60),
         },
       });
 
-      // Update User Streak & Stats
+      // Update User Streak & Stats incrementally
+      const newGlobalAvg = calculateIncrementalAverage(user.readingAvg || 0, user.readingDone || 0, bandScore);
+
       await tx.user.update({
         where: { id: dbUserId },
         data: {
@@ -226,6 +241,8 @@ export async function submitReadingAnswers(data: SubmitReadingInput) {
           },
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, user.longestStreak || 0),
+          readingAvg: newGlobalAvg,
+          readingDone: { increment: 1 },
         },
       });
 

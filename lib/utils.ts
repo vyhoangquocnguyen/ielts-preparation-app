@@ -123,6 +123,18 @@ export function formatTime(seconds: number) {
   return [hours, minutes, remainingSeconds].map((v) => v.toString().padStart(2, "0")).join(":");
 }
 
+/**
+ * Calculates the incremental average when a new score is added.
+ * formula: newAvg = ((oldAvg * oldCount) + newScore) / (oldCount + 1)
+ * @param oldAvg - Current average score
+ * @param oldCount - Number of attempts already completed
+ * @param newScore - The latest score to include
+ * @returns The new average score
+ */
+export function calculateIncrementalAverage(oldAvg: number, oldCount: number, newScore: number): number {
+  return (oldAvg * oldCount + newScore) / (oldCount + 1);
+}
+
 // Calculate month-related time values for analytics
 export function getMonthTimeValues(now: Date = new Date()) {
   const month = now.getMonth() + 1;

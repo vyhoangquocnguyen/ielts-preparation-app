@@ -1,6 +1,6 @@
 import prisma from "./prisma";
 import { generateSpeakingAIFeedback, generateWritingAIFeedback } from "./geminiAi";
-import { calculateNewStreak, getMonthTimeValues } from "./utils";
+import { calculateIncrementalAverage, calculateNewStreak, getMonthTimeValues } from "./utils";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -28,13 +28,20 @@ export async function processWritingFeedback(attemptId: string) {
     await prisma.$transaction(async (tx) => {
       // Row lock user for streak/analytics update
       const [user] = await tx.$queryRaw<
-        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
-      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${attempt.userId} FOR UPDATE`;
+        {
+          id: string;
+          currentStreak: number | null;
+          lastStudyDate: Date | null;
+          longestStreak: number | null;
+          writingAvg: number;
+          writingDone: number;
+        }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "writingAvg", "writingDone" FROM "User" WHERE id = ${attempt.userId} FOR UPDATE`;
 
       if (!user) throw new Error("User not found");
 
       const now = new Date();
-      const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
+      const { month, year } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
       // Update attempt
@@ -47,17 +54,16 @@ export async function processWritingFeedback(attemptId: string) {
         },
       });
 
-      // Update Analytics
-      const monthlyStats = await tx.writingAttempt.aggregate({
-        where: {
-          userId: attempt.userId,
-          createdAt: { gte: startOfMonth, lte: endOfMonth },
-          completed: true, // Only count completed ones for average
-        },
-        _avg: { overallScore: true },
-        _count: { id: true },
+      // Update Analytics incrementally
+      const analytics = await tx.userAnalytics.findUnique({
+        where: { userId_month_year: { userId: attempt.userId, month, year } },
       });
-      const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+
+      const newMonthlyAvg = calculateIncrementalAverage(
+        analytics?.writingAvg || 0,
+        analytics?.writingDone || 0,
+        feedback.overallScore,
+      );
 
       await tx.userAnalytics.upsert({
         where: {
@@ -70,19 +76,27 @@ export async function processWritingFeedback(attemptId: string) {
         update: {
           exercisesDone: { increment: 1 },
           totalStudyTime: { increment: Math.round(attempt.timeSpent / 60) },
-          writingAvg: realAverage,
+          writingAvg: newMonthlyAvg,
+          writingDone: { increment: 1 },
         },
         create: {
           userId: attempt.userId,
           month,
           year,
-          writingAvg: realAverage,
+          writingAvg: feedback.overallScore,
+          writingDone: 1,
           exercisesDone: 1,
           totalStudyTime: Math.round(attempt.timeSpent / 60),
         },
       });
 
-      // Update User Streak & Stats
+      // Update User Streak & Stats incrementally
+      const newGlobalAvg = calculateIncrementalAverage(
+        user.writingAvg || 0,
+        user.writingDone || 0,
+        feedback.overallScore,
+      );
+
       await tx.user.update({
         where: { id: attempt.userId },
         data: {
@@ -92,6 +106,8 @@ export async function processWritingFeedback(attemptId: string) {
           lastStudyDate: now,
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, user.longestStreak || 0),
+          writingAvg: newGlobalAvg,
+          writingDone: { increment: 1 },
         },
       });
     });
@@ -130,13 +146,20 @@ export async function processSpeakingFeedback(attemptId: string, base64Audio: st
     await prisma.$transaction(async (tx) => {
       // Row lock user
       const [user] = await tx.$queryRaw<
-        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
-      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${attempt.userId} FOR UPDATE`;
+        {
+          id: string;
+          currentStreak: number | null;
+          lastStudyDate: Date | null;
+          longestStreak: number | null;
+          speakingAvg: number;
+          speakingDone: number;
+        }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "speakingAvg", "speakingDone" FROM "User" WHERE id = ${attempt.userId} FOR UPDATE`;
 
       if (!user) throw new Error("User not found");
 
       const now = new Date();
-      const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
+      const { month, year } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
 
       // Update attempt
@@ -149,16 +172,16 @@ export async function processSpeakingFeedback(attemptId: string, base64Audio: st
         },
       });
 
-      // Update Analytics
-      const monthlyStats = await tx.speakingAttempt.aggregate({
-        where: {
-          userId: attempt.userId,
-          createdAt: { gte: startOfMonth, lte: endOfMonth },
-          completed: true,
-        },
-        _avg: { overallScore: true },
+      // Update Analytics incrementally
+      const analytics = await tx.userAnalytics.findUnique({
+        where: { userId_month_year: { userId: attempt.userId, month, year } },
       });
-      const realAverage = monthlyStats._avg.overallScore || feedback.overallScore;
+
+      const newMonthlyAvg = calculateIncrementalAverage(
+        analytics?.speakingAvg || 0,
+        analytics?.speakingDone || 0,
+        feedback.overallScore,
+      );
 
       await tx.userAnalytics.upsert({
         where: {
@@ -171,19 +194,27 @@ export async function processSpeakingFeedback(attemptId: string, base64Audio: st
         update: {
           exercisesDone: { increment: 1 },
           totalStudyTime: { increment: Math.ceil(attempt.audioDuration / 60) },
-          speakingAvg: realAverage,
+          speakingAvg: newMonthlyAvg,
+          speakingDone: { increment: 1 },
         },
         create: {
           userId: attempt.userId,
           month,
           year,
-          speakingAvg: realAverage,
+          speakingAvg: feedback.overallScore,
+          speakingDone: 1,
           exercisesDone: 1,
           totalStudyTime: Math.ceil(attempt.audioDuration / 60),
         },
       });
 
-      // Update User Streak & Stats
+      // Update User Streak & Stats incrementally
+      const newGlobalAvg = calculateIncrementalAverage(
+        user.speakingAvg || 0,
+        user.speakingDone || 0,
+        feedback.overallScore,
+      );
+
       await tx.user.update({
         where: { id: attempt.userId },
         data: {
@@ -193,6 +224,8 @@ export async function processSpeakingFeedback(attemptId: string, base64Audio: st
           lastStudyDate: now,
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, user.longestStreak || 0),
+          speakingAvg: newGlobalAvg,
+          speakingDone: { increment: 1 },
         },
       });
     });
