@@ -37,67 +37,44 @@ export async function getCurrentUser() {
 }
 
 // Get dashboard statistics for a user
+// Optimized to use denormalized fields from User model
 export async function getDashboardStatistics() {
   const dbUserId = await getAuthenticatedId();
-  // Get counts of completed exercise per module
-  // Get counts and averages in parallel using the indexed dbUserId
-  const [
-    listeningCount,
-    readingCount,
-    writingCount,
-    speakingCount,
-    listeningAve,
-    readingAve,
-    writingAve,
-    speakingAve,
-    user,
-  ] = await Promise.all([
-    // Counts
-    prisma.listeningAttempt.count({ where: { userId: dbUserId, completed: true } }),
-    prisma.readingAttempt.count({ where: { userId: dbUserId, completed: true } }),
-    prisma.writingAttempt.count({ where: { userId: dbUserId, completed: true } }),
-    prisma.speakingAttempt.count({ where: { userId: dbUserId, completed: true } }),
 
-    // Averages
-    prisma.listeningAttempt.aggregate({
-      where: { userId: dbUserId, completed: true },
-      _avg: { score: true },
-    }),
-    prisma.readingAttempt.aggregate({
-      where: { userId: dbUserId, completed: true },
-      _avg: { score: true },
-    }),
-    prisma.writingAttempt.aggregate({
-      where: { userId: dbUserId, completed: true, overallScore: { not: null } },
-      _avg: { overallScore: true },
-    }),
-    prisma.speakingAttempt.aggregate({
-      where: { userId: dbUserId, completed: true, overallScore: { not: null } },
-      _avg: { overallScore: true },
-    }),
+  const user = await prisma.user.findUnique({
+    where: { id: dbUserId },
+    select: {
+      totalStudyTime: true,
+      listeningAvg: true,
+      readingAvg: true,
+      writingAvg: true,
+      speakingAvg: true,
+      listeningDone: true,
+      readingDone: true,
+      writingDone: true,
+      speakingDone: true,
+    },
+  });
 
-    // Study Time
-    prisma.user.findUnique({
-      where: { id: dbUserId },
-      select: { totalStudyTime: true },
-    }),
-  ]);
+  if (!user) {
+    throw new Error("User not found");
+  }
 
   return {
-    exerciseCompleted: listeningCount + readingCount + writingCount + speakingCount,
+    exerciseCompleted: user.listeningDone + user.readingDone + user.writingDone + user.speakingDone,
     moduleCounts: {
-      listening: listeningCount,
-      reading: readingCount,
-      writing: writingCount,
-      speaking: speakingCount,
+      listening: user.listeningDone,
+      reading: user.readingDone,
+      writing: user.writingDone,
+      speaking: user.speakingDone,
     },
     averageScore: {
-      listening: listeningAve._avg.score || 0,
-      reading: readingAve._avg.score || 0,
-      writing: writingAve._avg.overallScore || 0,
-      speaking: speakingAve._avg.overallScore || 0,
+      listening: user.listeningAvg,
+      reading: user.readingAvg,
+      writing: user.writingAvg,
+      speaking: user.speakingAvg,
     },
-    totalStudyTime: user?.totalStudyTime || 0,
+    totalStudyTime: user.totalStudyTime,
   };
 }
 

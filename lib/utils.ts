@@ -132,3 +132,14 @@ export function getMonthTimeValues(now: Date = new Date()) {
 
   return { month, year, startOfMonth, endOfMonth };
 }
+
+/**
+ * Calculates a new average incrementally without fetching all records.
+ * formula: newAvg = oldAvg + (newValue - oldAvg) / newCount
+ */
+export function calculateIncrementalAverage(oldAvg: number, newValue: number, newCount: number): number {
+  if (newCount <= 1) return newValue;
+  const rawAvg = oldAvg + (newValue - oldAvg) / newCount;
+  // Round to nearest 0.5 for IELTS band scores
+  return Math.round(rawAvg * 2) / 2;
+}

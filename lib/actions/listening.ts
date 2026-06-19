@@ -3,7 +3,12 @@
 import prisma from "@/lib/prisma";
 import { SubmitListeningInput, submitListeningSchema } from "../validation";
 import { ZodError } from "zod";
-import { calculateBandScore, calculateNewStreak, getMonthTimeValues } from "../utils";
+import {
+  calculateBandScore,
+  calculateIncrementalAverage,
+  calculateNewStreak,
+  getMonthTimeValues,
+} from "../utils";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedId } from "./auth";
 
@@ -167,8 +172,15 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
     const attemptId = await prisma.$transaction(async (tx) => {
       // Fetch user with row lock to prevent race conditions
       const [user] = await tx.$queryRaw<
-        { id: string; currentStreak: number | null; lastStudyDate: Date | null; longestStreak: number | null }[]
-      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
+        {
+          id: string;
+          currentStreak: number | null;
+          lastStudyDate: Date | null;
+          longestStreak: number | null;
+          listeningAvg: number;
+          listeningDone: number;
+        }[]
+      >`SELECT id, "currentStreak", "lastStudyDate", "longestStreak", "listeningAvg", "listeningDone" FROM "User" WHERE id = ${dbUserId} FOR UPDATE`;
 
       if (!user) throw new Error("User not found");
 
@@ -176,6 +188,11 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
       const now = new Date();
       const { month, year, startOfMonth, endOfMonth } = getMonthTimeValues(now);
       const newStreak = calculateNewStreak(user.currentStreak || 0, user.lastStudyDate);
+
+      // 8a. Calculate new overall average incrementally
+      const newListeningDone = user.listeningDone + 1;
+      const newListeningAvg = calculateIncrementalAverage(user.listeningAvg, bandScore, newListeningDone);
+
       // Create the attempt
       const attempt = await tx.listeningAttempt.create({
         data: {
@@ -199,7 +216,7 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         _avg: { score: true },
       });
 
-      const realAverage = monthlyStats._avg.score || bandScore;
+      const monthlyAverage = monthlyStats._avg.score || bandScore;
 
       // Update Analytics
       await tx.userAnalytics.upsert({
@@ -209,19 +226,19 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
         update: {
           exercisesDone: { increment: 1 },
           totalStudyTime: { increment: Math.round(validatedData.timeSpent / 60) },
-          listeningAvg: realAverage,
+          listeningAvg: monthlyAverage,
         },
         create: {
           userId: dbUserId,
           month,
           year,
-          listeningAvg: realAverage,
+          listeningAvg: monthlyAverage,
           exercisesDone: 1,
           totalStudyTime: Math.round(validatedData.timeSpent / 60),
         },
       });
 
-      // Update User Streak & Stats
+      // Update User Streak & Stats (including denormalized averages)
       await tx.user.update({
         where: { id: dbUserId },
         data: {
@@ -231,6 +248,8 @@ export async function submitListeningAnswers(data: SubmitListeningInput) {
           },
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, user.longestStreak || 0),
+          listeningAvg: newListeningAvg,
+          listeningDone: newListeningDone,
         },
       });
 

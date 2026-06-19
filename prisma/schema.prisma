@@ -52,6 +52,17 @@ model User{
   lastStudyDate DateTime?
   totalStudyTime Int @default(0)
 
+  // Denormalized fields for performance (O(1) dashboard)
+  listeningAvg Float @default(0)
+  readingAvg   Float @default(0)
+  writingAvg   Float @default(0)
+  speakingAvg  Float @default(0)
+
+  listeningDone Int @default(0)
+  readingDone   Int @default(0)
+  writingDone   Int @default(0)
+  speakingDone  Int @default(0)
+
   // Relations (with other models - listening, reading, speaking, writing attempts)
   listeningAttempts ListeningAttempt[]
   readingAttempts ReadingAttempt[]
